@@ -32,7 +32,7 @@ function tick(input) {
   const dt = Math.max(0, Math.min(1, now - lastNow));
   lastNow = now;
   needs.update(dt, {
-    activity: selector.current,
+    activity: input.cat?.activity ?? selector.current,
     intensity: input.cat?.intensity ?? 0,
     warmth: input.cat?.warmth ?? .55,
     security: input.cat?.security ?? .75,

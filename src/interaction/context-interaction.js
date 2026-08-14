@@ -37,6 +37,7 @@ export class ContextInteraction {
     this.ui = ui;
     this.cameraRig = cameraRig;
     this.raycaster = new THREE.Raycaster();
+    this.raycaster.far = 5.5;
     this.pointer = new THREE.Vector2();
     this.sources = [];
     this.hover = null;

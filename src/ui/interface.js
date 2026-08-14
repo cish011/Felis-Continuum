@@ -215,6 +215,19 @@ export class SimulationUI {
     if (label) this.elements.heldLabel.textContent = label;
   }
 
+  applyProfile(profile) {
+    this.profile = profile;
+    this.elements.nameInput.value = profile.name ?? 'Morrow';
+    this.elements.coat.value = profile.coat ?? 'silverTabby';
+    this.elements.fur.value = profile.furLength ?? .42;
+    this.elements.size.value = profile.bodySize ?? 1;
+    this.elements.eye.value = profile.eyeColor ?? 'lichen';
+    this.elements.personality.value = profile.personality ?? 'observer';
+    this.elements.collar.checked = profile.collar !== false;
+    this.elements.catName.textContent = profile.name ?? 'Morrow';
+    this.elements.catMood.textContent = PERSONALITIES[profile.personality]?.mood ?? 'quietly curious';
+  }
+
   setPetting(active) {
     document.body.classList.toggle('pet-mode', active);
     this.elements.petHint.classList.toggle('hidden', !active);

@@ -41,22 +41,60 @@ export function createEnvironment(scene) {
   const tmpBox = new THREE.Box3();
   const tmpNormal = new THREE.Vector3();
 
+  // The supplied atlas is deliberately split into four material families.  A
+  // separate clone per quadrant keeps UV transforms independent while all
+  // clones share the loader's image source (TL oak, TR weave, BL soil, BR turf).
+  const atlasVariants = [];
+  const atlas = new THREE.TextureLoader().load('./textures/material-atlas.png', () => {
+    for (const texture of atlasVariants) texture.needsUpdate = true;
+  });
+  atlas.name = 'material-atlas-source';
+  atlas.colorSpace = THREE.SRGBColorSpace;
+  atlas.anisotropy = 8;
+  atlas.minFilter = THREE.LinearMipmapLinearFilter;
+  atlas.magFilter = THREE.LinearFilter;
+  disposableTextures.add(atlas);
+
+  function atlasCrop(name, column, row) {
+    const texture = atlas.clone();
+    texture.name = `material-atlas-${name}`;
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = 8;
+    texture.wrapS = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.repeat.set(.5, .5);
+    // Texture UVs start at the lower-left; row 1 therefore selects the image's
+    // top half after the loader's normal vertical flip.
+    texture.offset.set(column * .5, row * .5);
+    texture.needsUpdate = true;
+    atlasVariants.push(texture);
+    disposableTextures.add(texture);
+    return texture;
+  }
+
+  const atlasMaps = {
+    oak: atlasCrop('oak', 0, 1),
+    fabric: atlasCrop('woven-fabric', 1, 1),
+    soil: atlasCrop('soil', 0, 0),
+    grass: atlasCrop('grass', 1, 0),
+  };
+
   const palette = {
     plaster: material(0xd8d0c2, .92, 0),
     plasterWarm: material(0xc9baa8, .93, 0),
     trim: material(0xf0e9dc, .76, 0),
     darkTrim: material(0x3a3732, .78, .03),
-    wood: material(0x886447, .72, .03),
-    lightWood: material(0xb38a61, .75, .02),
-    darkWood: material(0x49382d, .67, .03),
-    floorWood: material(0x9b795b, .84, .01),
+    wood: material(0xc3a17f, .7, .025, { map:atlasMaps.oak }),
+    lightWood: material(0xddc09d, .74, .018, { map:atlasMaps.oak }),
+    darkWood: material(0x70594b, .65, .035, { map:atlasMaps.oak }),
+    floorWood: material(0xd1ae89, .78, .012, { map:atlasMaps.oak }),
     tile: material(0xc9c7bf, .55, .02),
     tileDark: material(0x767b7b, .62, .02),
-    carpet: material(0x7d756d, 1, 0),
-    fabricGreen: material(0x5e7568, .98, 0),
-    fabricBlue: material(0x546c7d, .96, 0),
-    fabricCream: material(0xd8c8ae, 1, 0),
-    fabricRust: material(0xa85f46, .98, 0),
+    carpet: material(0xaaa29a, 1, 0, { map:atlasMaps.fabric }),
+    fabricGreen: material(0x839789, .98, 0, { map:atlasMaps.fabric }),
+    fabricBlue: material(0x788c9b, .97, 0, { map:atlasMaps.fabric }),
+    fabricCream: material(0xe9dcc7, 1, 0, { map:atlasMaps.fabric }),
+    fabricRust: material(0xb97862, .98, 0, { map:atlasMaps.fabric }),
     cardboard: material(0xa97945, .94, 0),
     rope: material(0xb9a078, 1, 0),
     steel: material(0x8f9899, .3, .72),
@@ -68,8 +106,8 @@ export function createEnvironment(scene) {
     water: material(0x4eaac5, .12, .05, { transparent:true, opacity:.72, emissive:0x0c3d4a, emissiveIntensity:.24 }),
     food: material(0x765035, .88, 0),
     litter: material(0xb9af98, 1, 0),
-    soil: material(0x4b382a, 1, 0),
-    lawn: material(0x4d7044, 1, 0),
+    soil: material(0x9a8775, 1, 0, { map:atlasMaps.soil }),
+    lawn: material(0x91ab7e, 1, 0, { map:atlasMaps.grass }),
     leaf: material(0x41643d, .93, 0),
     leafLight: material(0x678358, .95, 0),
     flower: material(0xb9828f, .8, 0),
