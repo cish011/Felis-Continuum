@@ -1,0 +1,20 @@
+#reticle {
+  position: absolute;
+  z-index: 4;
+  left: 50%; top: 50%;
+  width: 3px; height: 3px;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 50%;
+  opacity: .24;
+  pointer-events: none;
+  transform:translate(-50%,-50%);
+  transition:width 170ms ease,height 170ms ease,opacity 170ms ease,border-color 170ms ease,box-shadow 170ms ease,background-color 170ms ease;
+}
+
+body.pet-mode #viewport canvas { cursor: crosshair; }
+body.pet-mode #reticle { width:18px; height:18px; opacity:.75; border-color:#d6ff70; box-shadow:0 0 16px rgba(214,255,112,.28); }
+body.has-context #reticle { width:7px; height:7px; opacity:.9; border-color:#d6ff70; background:rgba(214,255,112,.12); box-shadow:0 0 9px rgba(214,255,112,.22); }
+
+::selection { color: #10150e; background: #d6ff70; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: rgba(214,255,112,.28); }

@@ -1,0 +1,28 @@
+{
+  "name": "felis-continuum",
+  "productName": "Felis Continuum",
+  "version": "0.9.0",
+  "description": "An experimental procedural 3D domestic-cat life simulator.",
+  "author": "Felis Continuum Project",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "icon": "node scripts/create-icon.mjs",
+    "build:web": "vite build",
+    "start": "electron .",
+    "package:win": "npm run icon && npm run build:web && electron-packager . \"Felis Continuum\" --platform=win32 --arch=x64 --out=release --overwrite --asar --prune=true --icon=build/icon.ico --ignore=\"^/release($|/)\" --ignore=\"^/tests($|/)\" --ignore=\"^/research($|/)\" --ignore=\"^/\\.npm-cache($|/)\" --ignore=\"^/\\.electron-cache($|/)\"",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.20.0",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.3.6",
+    "electron": "^37.2.6",
+    "vite": "^7.1.1"
+  }
+}

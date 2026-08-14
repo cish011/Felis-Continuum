@@ -1,0 +1,19 @@
+{
+  "name": "Morrow",
+  "coat": "silverTabby",
+  "eyeColor": "lichen",
+  "furLength": 0.42,
+  "bodySize": 1.0,
+  "collar": true,
+  "personality": "observer",
+  "traits": {
+    "affectionate": 0.58,
+    "independent": 0.64,
+    "curious": 0.82,
+    "cautious": 0.47,
+    "playful": 0.73,
+    "energetic": 0.57,
+    "social": 0.55,
+    "mischievous": 0.68
+  }
+}

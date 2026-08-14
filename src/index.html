@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111820" />
+    <title>Felis Continuum</title>
+  </head>
+  <body>
+    <main id="app" aria-label="Felis Continuum 3D simulation">
+      <div id="viewport" aria-label="Interactive 3D cat habitat"></div>
+
+      <div class="top-info hud-element" aria-label="World conditions">
+        <span id="weather-label">CLEAR · SUN PATCHES</span>
+        <i></i>
+        <strong id="world-clock">08:14</strong>
+      </div>
+
+      <section id="cat-card" class="cat-card glass hud-element collapsed" aria-label="Cat status">
+        <button id="status-toggle" class="status-summary" aria-expanded="false">
+          <span class="status-presence" aria-hidden="true"></span>
+          <strong id="cat-name">Morrow</strong>
+          <span class="status-separator">·</span>
+          <span id="cat-mood">quietly curious</span>
+          <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5l3-3" /></svg>
+        </button>
+        <div class="cat-expanded">
+          <div id="need-bars" class="need-bars"></div>
+          <div class="intent-readout">
+            <span class="eyebrow">CURRENT INTENTION</span>
+            <strong id="intent-label">Orienting to the room</strong>
+            <p id="intent-detail">Building a spatial memory…</p>
+          </div>
+        </div>
+      </section>
+
+      <aside class="camera-dock glass hud-element" aria-label="View and global controls">
+        <div class="camera-segments" aria-label="Camera mode">
+          <i id="camera-indicator" aria-hidden="true"></i>
+          <button class="active" data-camera="follow">Follow</button>
+          <button data-camera="close">Close</button>
+          <button data-camera="free">Free</button>
+        </div>
+        <span class="control-rule"></span>
+        <button id="debug-toggle" class="utility-button" aria-pressed="false" title="Simulation diagnostics (D)">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3h10v10H3zM6 1v2m4-2v2M6 13v2m4-2v2M1 6h2m-2 4h2m10-4h2m-2 4h2"/></svg><span>Debug</span>
+        </button>
+        <button id="settings-toggle" class="utility-button" aria-pressed="false" title="Cat profile">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6V3l2 2a5 5 0 0 1 4 0l2-2v3a4.6 4.6 0 0 1 .5 2c0 2.7-2 4.5-4.5 4.5S3.5 10.7 3.5 8A4.6 4.6 0 0 1 4 6Z"/><path d="M6.3 8h.1m3.2 0h.1M7 10h2"/></svg><span>Cat</span>
+        </button>
+      </aside>
+
+      <aside id="debug-panel" class="debug-panel glass hidden" aria-label="Simulation diagnostics">
+        <div class="panel-heading">
+          <div><span class="eyebrow">LIVE COGNITION</span><h3>Behavior telemetry</h3></div>
+          <span id="fps-label">60 FPS</span>
+        </div>
+        <div class="debug-grid">
+          <span>Gait</span><strong id="debug-gait">idle</strong>
+          <span>Velocity</span><strong id="debug-speed">0.00 m/s</strong>
+          <span>Attention</span><strong id="debug-attention">room</strong>
+          <span>Commitment</span><strong id="debug-commitment">0%</strong>
+          <span>Surface</span><strong id="debug-surface">oak floor</strong>
+        </div>
+        <div id="utility-list" class="utility-list"></div>
+      </aside>
+
+      <aside id="settings-panel" class="settings-panel glass hidden" aria-label="Cat appearance and personality">
+        <div class="panel-heading">
+          <div><span class="eyebrow">INDIVIDUAL</span><h3>Cat profile</h3></div>
+          <button id="randomize-cat" class="small-button">Randomize</button>
+        </div>
+        <label>Name <input id="name-input" maxlength="16" value="Morrow" /></label>
+        <label>Coat <select id="coat-select"></select></label>
+        <label>Fur length <input id="fur-slider" type="range" min="0" max="1" step="0.01" value="0.42" /></label>
+        <label>Body size <input id="size-slider" type="range" min="0.82" max="1.18" step="0.01" value="1" /></label>
+        <label>Eye color <select id="eye-select"></select></label>
+        <label>Temperament <select id="personality-select"></select></label>
+        <label class="toggle-row"><input id="collar-toggle" type="checkbox" checked /> Wears a collar</label>
+      </aside>
+
+      <div id="reticle" aria-hidden="true"></div>
+      <div id="context-prompt" class="context-prompt hidden" aria-live="polite">
+        <i aria-hidden="true"></i><span id="context-label">Interact</span>
+      </div>
+      <div id="held-item" class="held-item hidden" aria-live="polite">
+        <span class="eyebrow">HELD</span><strong id="held-label">Toy</strong><small>Click to use · R to drop</small>
+      </div>
+      <div id="toast-stack" aria-live="polite"></div>
+      <div id="pet-hint" class="pet-hint hidden">Stroke along the body · release to stop</div>
+
+      <section id="welcome" class="welcome" aria-label="Welcome to Felis Continuum">
+        <div class="welcome-card">
+          <span class="eyebrow">FELIS CONTINUUM</span>
+          <h2>A life, uninterrupted.</h2>
+          <p>Meet Morrow—an animal with memory, attention, needs, and intentions that continue whether or not you intervene.</p>
+          <div class="welcome-notes">
+            <span><kbd>POINT + CLICK</kbd> interact</span>
+            <span><kbd>DRAG EMPTY SPACE</kbd> orbit</span>
+            <span><kbd>SCROLL</kbd> zoom</span>
+            <span><kbd>WASD</kbd> free camera</span>
+            <span><kbd>Q</kbd> whistle</span>
+            <span><kbd>D</kbd> diagnostics</span>
+            <span><kbd>H</kbd> hide interface</span>
+          </div>
+          <button id="enter-world">ENTER THE HABITAT</button>
+        </div>
+      </section>
+
+      <div id="loading-screen">
+        <div class="loading-mark"><i></i><i></i><i></i></div>
+        <strong>FELIS CONTINUUM</strong>
+        <span id="loading-status">Assembling a living body…</span>
+      </div>
+    </main>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>

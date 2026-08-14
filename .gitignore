@@ -1,0 +1,8 @@
+node_modules/
+dist-web/
+release/
+.npm-cache/
+.electron-cache/
+build/icon.ico
+build/icon.png
+*.log
