@@ -12,8 +12,7 @@ import { CatAudio } from './audio/synth.js';
 import { ContextInteraction } from './interaction/context-interaction.js';
 import { createEnvironment } from './simulation/environment.js';
 import { ToyPhysics } from './simulation/physics.js';
-import { CatModel } from './simulation/cat-model.js';
-import { createContinuousCatSkin } from './simulation/cat-skin.js';
+import { ImportedCatModel } from './simulation/imported-cat-model.js';
 import { ProceduralLocomotion } from './simulation/locomotion.js';
 import { CognitionBridge } from './simulation/cognition.js';
 import { GoalExecutor } from './simulation/goal-executor.js';
@@ -44,13 +43,16 @@ async function bootstrap() {
   const toyPhysics = await ToyPhysics.create(view.scene, environment, { preferRapier:true, fixedStep:1/120, maxSubsteps:8 });
   toyPhysics.spawnDefaultSet();
 
-  ui.loadingStatus('Assembling anatomy, coat, and layered fur…');
+  ui.loadingStatus('Loading the supplied realistic cat model…');
   let profile = structuredClone(defaultProfile);
-  const cat = new CatModel(profile);
+  const cat = await ImportedCatModel.load(profile, {
+    anisotropy:view.renderer.capabilities.getMaxAnisotropy(),
+    onProgress:ratio => {
+      if (ratio > 0) ui.loadingStatus('Loading the supplied realistic cat model… ' + Math.round(ratio * 100) + '%');
+    },
+  });
   view.scene.add(cat.root);
-  ui.loadingStatus('Generating the one-piece smooth shorthair skin…');
-  const catSkin = createContinuousCatSkin({ quality:'high', color:0x9da29e, roughness:.78 });
-  catSkin.attachToCatModel(cat, { hideLegacySkin:true, registerPettable:true });
+  ui.loadingStatus('Binding the authored feline skeleton and animation library…');
   const locomotion = new ProceduralLocomotion(environment, {
     position:START_POSITION,
     heading:.72,
@@ -69,7 +71,7 @@ async function bootstrap() {
   refreshInteractionSources();
 
   const simulation = {
-    view, environment, toyPhysics, cat, catSkin, locomotion, executor, cameraRig,
+    view, environment, toyPhysics, cat, catSkin:null, locomotion, executor, cameraRig,
     diagnostics, cognition, interaction,
     get cognitionSnapshot() { return cognitionSnapshot; },
   };
@@ -108,8 +110,10 @@ async function bootstrap() {
     }
 
     const motion = executorState.motion ?? locomotion.getMotionState();
-    cat.update(motion, { ...(cognitionSnapshot ?? {}), pet:petState, held:heldCat }, frameDt, elapsed);
-    catSkin.updateFromCatModel(cat);
+    cat.update(motion, {
+      ...(cognitionSnapshot ?? {}), activity:executorState.activity,
+      pet:petState, held:heldCat,
+    }, frameDt, elapsed);
     cameraRig.update(frameDt, motion);
     if (heldBody) updateHeldToy(heldBody);
     const hour = (8.15 + elapsed / 135) % 24;
@@ -211,7 +215,7 @@ async function bootstrap() {
 
   function heldCatMotion(dt) {
     const point = heldPosition();
-    const rootPoint = new THREE.Vector3(point.x, point.y - .43 * profile.bodySize, point.z);
+    const rootPoint = new THREE.Vector3(point.x, point.y - .15 * profile.bodySize, point.z);
     locomotion.position.lerp(rootPoint, 1-Math.exp(-12*dt));
     locomotion.velocity.set(0,0,0);
     locomotion.speed = 0;
@@ -394,15 +398,16 @@ async function bootstrap() {
     const next={
       ...profile,
       name:names[Math.floor(Math.random()*names.length)],
-      coat:coats[Math.floor(Math.random()*coats.length)],
-      eyeColor:eyes[Math.floor(Math.random()*eyes.length)],
-      furLength:.08+Math.random()*.85,
+      coat:profile.coat,
+      eyeColor:profile.eyeColor,
+      furLength:profile.furLength,
       bodySize:.86+Math.random()*.28,
       personality:temperament,
       traits:{...PERSONALITIES[temperament].traits},
-      collar:Math.random()>.25,
+      collar:false,
     };
-    ui.applyProfile(next); applyProfile(next); ui.toast(`${next.name} now has an original new individual profile.`);
+    ui.applyProfile(next); applyProfile(next);
+    ui.toast(`${next.name} now has a new size and temperament; the supplied model's appearance is preserved.`);
   }
 
   function plain(vector) { return {x:vector?.x??0,y:vector?.y??0,z:vector?.z??0}; }
@@ -410,7 +415,7 @@ async function bootstrap() {
   function dispose() {
     cleanups.forEach(cleanup=>cleanup?.());
     interaction.dispose(); cognition.dispose(); executor.dispose?.(); diagnostics.dispose();
-    cameraRig.dispose(); catSkin.dispose(); cat.dispose(); toyPhysics.dispose(); environment.dispose(); view.dispose();
+    cameraRig.dispose(); cat.dispose(); toyPhysics.dispose(); environment.dispose(); view.dispose();
     delete window.__FELIS__;
   }
 }

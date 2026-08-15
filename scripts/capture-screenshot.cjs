@@ -253,15 +253,40 @@ async function capture() {
     const sim = window.__FELIS__;
     const canvas = sim?.view?.renderer?.domElement;
     const renderInfo = sim?.view?.renderer?.info?.render;
+    const importedMeshes = [];
+    sim?.cat?.root?.traverse?.(object => {
+      if (!object.isMesh) return;
+      const material = Array.isArray(object.material) ? object.material[0] : object.material;
+      if (object.isSkinnedMesh) object.computeBoundingBox?.();
+      else object.geometry?.computeBoundingBox?.();
+      const local = object.isSkinnedMesh ? object.boundingBox : object.geometry?.boundingBox;
+      importedMeshes.push({
+        name:object.name,
+        visible:object.visible,
+        skinned:Boolean(object.isSkinnedMesh),
+        map:Boolean(material?.map),
+        opacity:material?.opacity,
+        transparent:Boolean(material?.transparent),
+        color:material?.color?.getHexString?.(),
+        localMin:local?.min?.toArray?.() ?? null,
+        localMax:local?.max?.toArray?.() ?? null,
+      });
+    });
     return {
       hasSimulation: Boolean(sim),
       catVisible: Boolean(sim?.cat?.root?.visible && sim.cat.root.parent),
+      catImported:Boolean(sim?.cat?.isImportedCatModel),
+      catReady:Boolean(sim?.cat?.ready),
+      modelInfo:sim?.cat?.modelInfo ?? null,
+      importedMeshes,
       canvasWidth: canvas?.width || 0,
       canvasHeight: canvas?.height || 0,
       frame: renderInfo?.frame || 0,
       loadingClosed: document.querySelector('#loading-screen')?.classList.contains('closed') === true,
     };
   })()`, true);
+
+  process.stdout.write(`[capture] Health ${JSON.stringify(health)}\n`);
 
   if (!health.hasSimulation || !health.catVisible || health.canvasWidth < 100 || health.canvasHeight < 100 || !health.loadingClosed) {
     throw new Error(`Scene health check failed: ${JSON.stringify(health)}`);
