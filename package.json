@@ -15,6 +15,7 @@
     "build:web": "vite build",
     "start": "electron .",
     "screenshot": "electron scripts/capture-screenshot.cjs",
+    "screenshot:anatomy": "electron scripts/capture-anatomy.cjs",
     "package:win": "npm run materials && npm run icon && npm run build:web && electron-packager . \"Felis Continuum\" --platform=win32 --arch=x64 --out=release --overwrite --asar --prune=true --icon=build/icon.ico --ignore=\"^/release($|/)\" --ignore=\"^/tests($|/)\" --ignore=\"^/research($|/)\" --ignore=\"^/\\.npm-cache($|/)\" --ignore=\"^/\\.electron-cache($|/)\"",
     "test": "node --test tests/*.test.mjs"
   },

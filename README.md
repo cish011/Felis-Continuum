@@ -50,3 +50,17 @@ npm.cmd run package:win
 ```
 
 The packaged Windows application is emitted under `release/Felis Continuum-win32-x64/Felis Continuum.exe`. It is self-contained and uses no CDN or runtime network request.
+
+### Anatomy validation captures
+
+With the development server running, a second terminal can render the smooth
+base cat from five deterministic diagnostic angles:
+
+```powershell
+npm.cmd run screenshot:anatomy
+```
+
+The command writes side, front, top-three-quarter, standing, and walking views
+plus a machine-readable health manifest to `screenshots/anatomy-validation/`.
+It exits nonzero for renderer faults, blank frames, missing fur suppression, or
+any compatibility shim required by an incomplete rig integration.

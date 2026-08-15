@@ -46,9 +46,9 @@ export class CameraRig {
 
   update(dt, catMotion) {
     const catPosition = catMotion?.position ?? this.target;
-    const catHeight = catMotion?.bodyHeight ?? .5;
+    const catHeight = catMotion?.bodyHeight ?? .19;
     if (this.mode === 'follow' || this.mode === 'close') {
-      this.target.set(catPosition.x, catPosition.y + catHeight * .78, catPosition.z);
+      this.target.set(catPosition.x, catPosition.y + catHeight + .035, catPosition.z);
       const rate = this.mode === 'close' ? 8 : 3.4;
       this.controls.target.x = damp(this.controls.target.x, this.target.x, rate, dt);
       this.controls.target.y = damp(this.controls.target.y, this.target.y, rate, dt);

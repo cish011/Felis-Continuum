@@ -9,10 +9,10 @@ const UP = new THREE.Vector3(0, 1, 0);
 const EPSILON = 1e-5;
 const FOOT_ORDER = ['frontLeft', 'frontRight', 'hindLeft', 'hindRight'];
 const FOOT_LAYOUT = {
-  frontLeft: { side: -1, end: 'front', longitudinal: .31, walkOffset: .75 },
-  frontRight: { side: 1, end: 'front', longitudinal: .31, walkOffset: .25 },
-  hindLeft: { side: -1, end: 'hind', longitudinal: -.29, walkOffset: .5 },
-  hindRight: { side: 1, end: 'hind', longitudinal: -.29, walkOffset: 0 },
+  frontLeft: { side: -1, end: 'front', longitudinal: .175, walkOffset: .75 },
+  frontRight: { side: 1, end: 'front', longitudinal: .175, walkOffset: .25 },
+  hindLeft: { side: -1, end: 'hind', longitudinal: -.108, walkOffset: .5 },
+  hindRight: { side: 1, end: 'hind', longitudinal: -.108, walkOffset: 0 },
 };
 
 const GAIT_SPEED = {
@@ -164,7 +164,7 @@ export class ProceduralLocomotion {
     this._yawRate = 0;
 
     this.bodyScale = clamp(finite(start?.bodyScale, 1), .65, 1.5);
-    this.neutralBodyHeight = finite(start?.bodyHeight, .46 * this.bodyScale);
+    this.neutralBodyHeight = finite(start?.bodyHeight, .19 * this.bodyScale);
     this.bodyHeight = this.neutralBodyHeight;
     this.shoulderHeight = this.bodyHeight;
     this.pelvisHeight = this.bodyHeight;
@@ -212,7 +212,7 @@ export class ProceduralLocomotion {
         swingStartNormal: UP.clone(),
         landingTarget: new THREE.Vector3(),
         landingNormal: UP.clone(),
-        liftHeight: .06,
+        liftHeight: .03,
         transitionStart: new THREE.Vector3(),
       };
     }
@@ -570,7 +570,7 @@ export class ProceduralLocomotion {
   _nominalFootPosition(layout, bodyPosition, heading, narrowness = this.narrowness) {
     const forward = forwardAt(heading);
     const right = rightAt(heading);
-    const normalHalfWidth = (layout.end === 'front' ? .105 : .086) * this.bodyScale;
+    const normalHalfWidth = (layout.end === 'front' ? .045 : .043) * this.bodyScale;
     const halfWidth = lerp(normalHalfWidth, .017 * this.bodyScale, saturate(narrowness));
     return bodyPosition.clone()
       .addScaledVector(forward, layout.longitudinal * this.bodyScale)
@@ -624,10 +624,10 @@ export class ProceduralLocomotion {
         required = Math.max(required, top - baseline);
       }
     }
-    const speedLift = lerp(.052, .088, saturate(this.speed / 3.2));
-    const narrowLift = this.narrowness * .048;
+    const speedLift = lerp(.028, .046, saturate(this.speed / 3.2));
+    const narrowLift = this.narrowness * .025;
     const explicit = finite(context.footClearance, 0);
-    return clamp((speedLift + narrowLift + Math.max(0, required) + explicit) * this.bodyScale, .045, .3);
+    return clamp((speedLift + narrowLift + Math.max(0, required) + explicit) * this.bodyScale, .024, .18);
   }
 
   _updateFeet(dt, context) {
@@ -962,14 +962,14 @@ export class ProceduralLocomotion {
       ? 0
       : clamp(supportHeight - surface.height, -.07, .1);
     const heightTarget = Math.max(
-      .2,
+      .135 * this.bodyScale,
       this.neutralBodyHeight * (1 - this.crouch * .27) + supportCompensation,
     );
     this.bodyHeight = damp(this.bodyHeight, heightTarget, 11, dt);
     this.shoulderHeight = this.bodyHeight + clamp(frontHeight - supportHeight, -.1, .1);
     this.pelvisHeight = this.bodyHeight + clamp(hindHeight - supportHeight, -.1, .1);
 
-    const terrainPitch = Math.atan2(frontHeight - hindHeight, .6 * this.bodyScale);
+    const terrainPitch = Math.atan2(frontHeight - hindHeight, .283 * this.bodyScale);
     this.bodyPitch = damp(this.bodyPitch, clamp(terrainPitch, -.38, .38), 7.5, dt);
     const gallopAmount = smoothstep(1.55, 3.6, this.speed);
     const gaitFlex = Math.sin(this.gaitPhase * TAU) * gallopAmount * .085;

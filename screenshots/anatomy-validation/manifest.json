@@ -1,0 +1,224 @@
+{
+  "generatedAt": "2026-08-14T23:25:34.707Z",
+  "source": "http://127.0.0.1:4173",
+  "requestedViewport": {
+    "width": 1600,
+    "height": 1000
+  },
+  "renderMode": "live Three.js/Electron, smooth base anatomy, deterministic diagnostic light",
+  "diagnostic": {
+    "diagnosticMode": "cat-api",
+    "presentationCompatibility": [
+      "native"
+    ],
+    "hiddenFurObjects": 142,
+    "hasFloor": true,
+    "catParts": 79,
+    "shellMaterials": 9
+  },
+  "preDiagnosticRendererErrors": [],
+  "compatibilityAllowed": false,
+  "captures": [
+    {
+      "file": "01-side-standing.png",
+      "label": "side orthographic-like / standing",
+      "pose": "standing",
+      "bytes": 120132,
+      "statistics": {
+        "width": 1350,
+        "height": 681,
+        "samples": 20430,
+        "luminanceMean": 135.75,
+        "luminanceDeviation": 46.85,
+        "luminanceRange": 212.14
+      },
+      "framing": {
+        "center": [
+          -7.19999958198223,
+          0.2123528596980059,
+          -5.347224443252706
+        ],
+        "size": [
+          0.2550084966353916,
+          0.3747057187254596,
+          0.7688489724231156
+        ],
+        "camera": [
+          -4.620565989246057,
+          0.27683869951641027,
+          -5.347224443252706
+        ],
+        "direction": [
+          0.9996876464081226,
+          0.024992191160203066,
+          0
+        ],
+        "fov": 10.5,
+        "contributingObjects": 161,
+        "skippedObjects": []
+      }
+    },
+    {
+      "file": "02-front-standing.png",
+      "label": "front orthographic-like / standing",
+      "pose": "standing",
+      "bytes": 120132,
+      "statistics": {
+        "width": 1350,
+        "height": 681,
+        "samples": 20430,
+        "luminanceMean": 135.75,
+        "luminanceDeviation": 46.85,
+        "luminanceRange": 212.14
+      },
+      "framing": {
+        "center": [
+          -7.19999958198223,
+          0.2123528596980059,
+          -5.347224443252706
+        ],
+        "size": [
+          0.2550084966353916,
+          0.3747057187254596,
+          0.7688489724231156
+        ],
+        "camera": [
+          -7.19999958198223,
+          0.28419826563876044,
+          -2.4734082056225253
+        ],
+        "direction": [
+          0,
+          0.024992191160203066,
+          0.9996876464081226
+        ],
+        "fov": 10.5,
+        "contributingObjects": 161,
+        "skippedObjects": []
+      }
+    },
+    {
+      "file": "03-top-three-quarter-standing.png",
+      "label": "top three-quarter / standing",
+      "pose": "standing",
+      "bytes": 100857,
+      "statistics": {
+        "width": 1350,
+        "height": 681,
+        "samples": 20430,
+        "luminanceMean": 149.41,
+        "luminanceDeviation": 37.49,
+        "luminanceRange": 206.36
+      },
+      "framing": {
+        "center": [
+          -7.19999958198223,
+          0.2123528596980059,
+          -5.347224443252706
+        ],
+        "size": [
+          0.2550084966353916,
+          0.3747057187254596,
+          0.7688489724231156
+        ],
+        "camera": [
+          -5.049482494107843,
+          3.5725358095017348,
+          -2.6590780834097227
+        ],
+        "direction": [
+          0.44703900498169,
+          0.6984984452838906,
+          0.5587987562271125
+        ],
+        "fov": 12,
+        "contributingObjects": 161,
+        "skippedObjects": []
+      }
+    },
+    {
+      "file": "04-side-walking.png",
+      "label": "side orthographic-like / walking",
+      "pose": "walking",
+      "bytes": 138276,
+      "statistics": {
+        "width": 1350,
+        "height": 681,
+        "samples": 20430,
+        "luminanceMean": 133.23,
+        "luminanceDeviation": 47.68,
+        "luminanceRange": 178.87
+      },
+      "framing": {
+        "center": [
+          -7.198523009070613,
+          0.2088182564084535,
+          -5.346954910592256
+        ],
+        "size": [
+          0.25695953904632063,
+          0.3676365121463548,
+          0.7704857034405945
+        ],
+        "camera": [
+          -4.61197166075936,
+          0.2993475535993474,
+          -5.346954910592256
+        ],
+        "direction": [
+          0.999388062160532,
+          0.034978582175618625,
+          0
+        ],
+        "fov": 10.5,
+        "contributingObjects": 161,
+        "skippedObjects": []
+      }
+    },
+    {
+      "file": "05-three-quarter-walking.png",
+      "label": "front three-quarter / walking",
+      "pose": "walking",
+      "bytes": 104698,
+      "statistics": {
+        "width": 1350,
+        "height": 681,
+        "samples": 20430,
+        "luminanceMean": 118.22,
+        "luminanceDeviation": 17.23,
+        "luminanceRange": 194.06
+      },
+      "framing": {
+        "center": [
+          -7.198523009070613,
+          0.2088182564084535,
+          -5.346954910592256
+        ],
+        "size": [
+          0.25695953904632063,
+          0.3676365121463548,
+          0.7704857034405945
+        ],
+        "camera": [
+          -4.973399323641475,
+          1.0988677305801091,
+          -2.7291623394991515
+        ],
+        "direction": [
+          0.6269520953575629,
+          0.2507808381430252,
+          0.7375907004206623
+        ],
+        "fov": 11.5,
+        "contributingObjects": 161,
+        "skippedObjects": []
+      }
+    }
+  ],
+  "captureDimensions": {
+    "width": 1350,
+    "height": 681
+  },
+  "postDiagnosticRendererErrors": [],
+  "status": "passed"
+}

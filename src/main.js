@@ -51,7 +51,7 @@ async function bootstrap() {
     position:START_POSITION,
     heading:.72,
     bodyScale:profile.bodySize,
-    bodyHeight:.46 * profile.bodySize,
+    bodyHeight:.19 * profile.bodySize,
   });
   const executor = new GoalExecutor({ locomotion, environment, toyPhysics, events });
   const cameraRig = new CameraRig(view.camera, view.renderer.domElement, environment);
@@ -378,7 +378,7 @@ async function bootstrap() {
     cat.applyProfile(profile);
     cognition.setPersonality(profile.traits);
     locomotion.bodyScale=profile.bodySize;
-    locomotion.neutralBodyHeight=.46*profile.bodySize;
+    locomotion.neutralBodyHeight=.19*profile.bodySize;
     refreshInteractionSources();
   }
 
