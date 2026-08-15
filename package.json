@@ -13,10 +13,12 @@
     "icon": "node scripts/create-icon.mjs",
     "materials": "node scripts/generate-pbr-materials.mjs",
     "build:web": "vite build",
+    "verify:package-inputs": "node scripts/verify-package-inputs.mjs",
     "start": "electron .",
     "screenshot": "electron scripts/capture-screenshot.cjs",
     "screenshot:anatomy": "electron scripts/capture-anatomy.cjs",
-    "package:win": "npm run materials && npm run icon && npm run build:web && electron-packager . \"Felis Continuum\" --platform=win32 --arch=x64 --out=release --overwrite --asar --prune=true --icon=build/icon.ico --ignore=\"^/release($|/)\" --ignore=\"^/tests($|/)\" --ignore=\"^/research($|/)\" --ignore=\"^/\\.npm-cache($|/)\" --ignore=\"^/\\.electron-cache($|/)\"",
+    "package:win": "npm run materials && npm run icon && npm run build:web && npm run verify:package-inputs && electron-packager . \"Felis Continuum\" --platform=win32 --arch=x64 --out=release --overwrite --asar --prune=true --icon=build/icon.ico --ignore=\"^/release($|/)\" --ignore=\"^/tests($|/)\" --ignore=\"^/research($|/)\" --ignore=\"^/screenshots($|/)\" --ignore=\"^/\\.npm-cache($|/)\" --ignore=\"^/\\.electron-cache($|/)\"",
+    "smoke:packaged": "node scripts/smoke-packaged.cjs",
     "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {

@@ -47,9 +47,11 @@ npm.cmd install
 npm.cmd run dev
 npm.cmd test
 npm.cmd run package:win
+npm.cmd run smoke:packaged
 ```
 
 The packaged Windows application is emitted under `release/Felis Continuum-win32-x64/Felis Continuum.exe`. It is self-contained and uses no CDN or runtime network request.
+The smoke command launches that EXE invisibly and verifies the packaged preload bridge, WebGL 2 renderer, cognition worker, and Rapier WASM backend before exiting.
 
 ### Anatomy validation captures
 

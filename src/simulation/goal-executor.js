@@ -56,6 +56,8 @@ export class GoalExecutor {
     this.resourceCommitted=false;
     this.lastMotion=this.locomotion?.getMotionState?.()??{position:new THREE.Vector3(),heading:0,velocity:new THREE.Vector3(),speed:0,feet:{}};
     this.interruption=null;
+    this.threatTarget=null;
+    this.fleeTarget=null;
   }
 
   update(dt,snapshot) {
@@ -68,6 +70,13 @@ export class GoalExecutor {
     const requestedGoal=intention?.goal??'observe';
     const requestedPlanId=plan?.id??`${requestedGoal}:${plan?.target?.id??'none'}`;
     if(requestedGoal!==this.goal||requestedPlanId!==this.planId) this.beginPlan(requestedGoal,requestedPlanId,plan);
+    // The application stops calling the executor while the cat is physically
+    // held. Therefore the first update after a pickup is, by definition, the
+    // release/resume frame; retaining this interruption would freeze the cat.
+    if(this.interruption?.kind==='pickup') {
+      this.interruption=null;
+      this.phase='settle';
+    }
     this.phaseTime+=dt;
 
     let result;
@@ -118,6 +127,8 @@ export class GoalExecutor {
     this.waypoints=this.target?this.buildTraversalWaypoints(this.locomotion.position,this.target):[];
     this.locomotion?.clearTarget?.();
     this.interruption=null;
+    this.threatTarget=null;
+    this.fleeTarget=null;
   }
 
   updateObserve(dt,snapshot) {
@@ -150,7 +161,16 @@ export class GoalExecutor {
 
   updateTargetGoal(dt,snapshot,flee) {
     const dynamic=this.resolveDynamicTarget(snapshot);
-    if(dynamic)this.target=dynamic;
+    if(flee&&this.targetId!=='temporary-safety') {
+      const threat=dynamic??this.threatTarget??this.target;
+      if(threat) {
+        if(!this.threatTarget||!this.fleeTarget||horizontalDistance(threat,this.threatTarget)>.35) {
+          this.threatTarget=threat.clone();
+          this.fleeTarget=this.computeFleeTarget(threat);
+        }
+        this.target=this.fleeTarget.clone();
+      }
+    } else if(dynamic)this.target=dynamic;
     if(!this.target) {
       this.lastMotion=this.locomotion.update(dt,{desiredSpeed:0});
       this.progress=Math.min(.28,this.progress+dt*.015);
@@ -158,7 +178,6 @@ export class GoalExecutor {
       return {activity:'search',distance:Infinity,facing:0,interaction:null};
     }
 
-    if(flee&&this.targetId!=='temporary-safety')this.target=this.computeFleeTarget(this.target);
     const current=this.locomotion.position;
     const distance=horizontalDistance(current,this.target);
     const vertical=this.target.y-current.y;
@@ -294,10 +313,14 @@ export class GoalExecutor {
   resolveDynamicTarget(snapshot) {
     if(this.goal==='play') {
       const body=this.findToy(this.targetId);
-      if(body)return this.predictToyIntercept(body.position,body.velocity);
+      // Keep the semantic target at the actual toy. The navigation destination
+      // is predicted exactly once below; predicting here as well double-led a
+      // moving toy and made the cat chase empty space.
+      if(body)return body.position.clone();
     }
     const planTarget=snapshot?.plan?.target;
     if(planTarget?.position)return vec(planTarget.position);
+    if(this.goal==='flee'&&this.threatTarget)return this.threatTarget.clone();
     return this.target;
   }
 
@@ -375,11 +398,15 @@ export class GoalExecutor {
 
   closestPointOnSurface(surface,cursor,target) {
     const margin=.16;
-    const minX=finite(surface.minX,target.x)-margin,maxX=finite(surface.maxX,target.x)+margin;
-    const minZ=finite(surface.minZ,target.z)-margin,maxZ=finite(surface.maxZ,target.z)+margin;
+    const rawMinX=finite(surface.minX,target.x),rawMaxX=finite(surface.maxX,target.x);
+    const rawMinZ=finite(surface.minZ,target.z),rawMaxZ=finite(surface.maxZ,target.z);
+    let minX=Math.min(rawMinX,rawMaxX)+margin,maxX=Math.max(rawMinX,rawMaxX)-margin;
+    let minZ=Math.min(rawMinZ,rawMaxZ)+margin,maxZ=Math.max(rawMinZ,rawMaxZ)-margin;
+    if(minX>maxX) minX=maxX=(rawMinX+rawMaxX)*.5;
+    if(minZ>maxZ) minZ=maxZ=(rawMinZ+rawMaxZ)*.5;
     const blend=cursor.clone().lerp(target,.62);
-    const x=clamp(blend.x,Math.min(minX,maxX),Math.max(minX,maxX));
-    const z=clamp(blend.z,Math.min(minZ,maxZ),Math.max(minZ,maxZ));
+    const x=clamp(blend.x,minX,maxX);
+    const z=clamp(blend.z,minZ,maxZ);
     const y=typeof surface.heightAt==='function'?surface.heightAt(x,z):finite(surface.y,target.y);
     return new THREE.Vector3(x,y,z);
   }

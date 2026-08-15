@@ -13,6 +13,7 @@ import { ContextInteraction } from './interaction/context-interaction.js';
 import { createEnvironment } from './simulation/environment.js';
 import { ToyPhysics } from './simulation/physics.js';
 import { CatModel } from './simulation/cat-model.js';
+import { createContinuousCatSkin } from './simulation/cat-skin.js';
 import { ProceduralLocomotion } from './simulation/locomotion.js';
 import { CognitionBridge } from './simulation/cognition.js';
 import { GoalExecutor } from './simulation/goal-executor.js';
@@ -47,6 +48,9 @@ async function bootstrap() {
   let profile = structuredClone(defaultProfile);
   const cat = new CatModel(profile);
   view.scene.add(cat.root);
+  ui.loadingStatus('Generating the one-piece smooth shorthair skin…');
+  const catSkin = createContinuousCatSkin({ quality:'high', color:0x9da29e, roughness:.78 });
+  catSkin.attachToCatModel(cat, { hideLegacySkin:true, registerPettable:true });
   const locomotion = new ProceduralLocomotion(environment, {
     position:START_POSITION,
     heading:.72,
@@ -65,7 +69,7 @@ async function bootstrap() {
   refreshInteractionSources();
 
   const simulation = {
-    view, environment, toyPhysics, cat, locomotion, executor, cameraRig,
+    view, environment, toyPhysics, cat, catSkin, locomotion, executor, cameraRig,
     diagnostics, cognition, interaction,
     get cognitionSnapshot() { return cognitionSnapshot; },
   };
@@ -105,6 +109,7 @@ async function bootstrap() {
 
     const motion = executorState.motion ?? locomotion.getMotionState();
     cat.update(motion, { ...(cognitionSnapshot ?? {}), pet:petState, held:heldCat }, frameDt, elapsed);
+    catSkin.updateFromCatModel(cat);
     cameraRig.update(frameDt, motion);
     if (heldBody) updateHeldToy(heldBody);
     const hour = (8.15 + elapsed / 135) % 24;
@@ -405,7 +410,7 @@ async function bootstrap() {
   function dispose() {
     cleanups.forEach(cleanup=>cleanup?.());
     interaction.dispose(); cognition.dispose(); executor.dispose?.(); diagnostics.dispose();
-    cameraRig.dispose(); cat.dispose(); toyPhysics.dispose(); environment.dispose(); view.dispose();
+    cameraRig.dispose(); catSkin.dispose(); cat.dispose(); toyPhysics.dispose(); environment.dispose(); view.dispose();
     delete window.__FELIS__;
   }
 }

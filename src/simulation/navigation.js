@@ -3,6 +3,9 @@ import { clamp, lerp, saturate } from '../core/math.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const EPSILON = 1e-5;
+const COLLIDER_INVERSE = new THREE.Matrix4();
+const COLLIDER_LOCAL = new THREE.Vector3();
+const COLLIDER_SCALE = new THREE.Vector3();
 
 function vector3(value, fallback = null) {
   if (value?.isVector3) return value.clone();
@@ -87,6 +90,33 @@ function obstacleBox(obstacle) {
   return null;
 }
 
+function orientedColliderBlocks(obstacle, point, radius, options) {
+  const object=obstacle?.colliderObject;
+  const geometry=object?.geometry;
+  if(!object?.isObject3D||!geometry) return null;
+  if(obstacle.min?.isVector3&&obstacle.max?.isVector3&&(
+    point.x<obstacle.min.x-radius||point.x>obstacle.max.x+radius||
+    point.z<obstacle.min.z-radius||point.z>obstacle.max.z+radius
+  )) return false;
+  if(!geometry.boundingBox) geometry.computeBoundingBox?.();
+  const box=geometry.boundingBox;
+  if(!box||box.isEmpty()) return null;
+  object.updateWorldMatrix?.(true,false);
+  COLLIDER_INVERSE.copy(object.matrixWorld).invert();
+  COLLIDER_LOCAL.copy(point).applyMatrix4(COLLIDER_INVERSE);
+  COLLIDER_SCALE.setFromMatrixScale(object.matrixWorld);
+  const minScale=Math.max(EPSILON,Math.min(Math.abs(COLLIDER_SCALE.x),Math.abs(COLLIDER_SCALE.y),Math.abs(COLLIDER_SCALE.z)));
+  const localRadius=radius/minScale;
+  if(COLLIDER_LOCAL.x<box.min.x-localRadius||COLLIDER_LOCAL.x>box.max.x+localRadius||
+      COLLIDER_LOCAL.z<box.min.z-localRadius||COLLIDER_LOCAL.z>box.max.z+localRadius) return false;
+  const tolerance=finite(options.stepTolerance,.025)/minScale;
+  const bodyHeight=finite(options.bodyHeight,finite(options.height,.31))/minScale;
+  if(COLLIDER_LOCAL.y+bodyHeight<=box.min.y+tolerance||COLLIDER_LOCAL.y>=box.max.y-tolerance) return false;
+  const maxStep=finite(options.maxStep,.22)/minScale;
+  if((obstacle.step||obstacle.walkableTop)&&box.max.y-COLLIDER_LOCAL.y<=maxStep) return false;
+  return true;
+}
+
 class MinHeap {
   constructor() { this.items = []; }
 
@@ -154,7 +184,11 @@ export class NavigationSystem {
     return [];
   }
 
-  sampleSurface(positionOrX, z, fallbackY = 0) {
+  sampleSurface(positionOrX, z, fallbackY = 0, queryOptions = {}) {
+    if(fallbackY&&typeof fallbackY==='object') {
+      queryOptions=fallbackY;
+      fallbackY=finite(queryOptions.fallbackY,0);
+    }
     const point = positionOrX?.isVector3 || (positionOrX && typeof positionOrX === 'object')
       ? vector3(positionOrX)
       : new THREE.Vector3(finite(positionOrX, 0), finite(fallbackY, 0), finite(z, 0));
@@ -163,15 +197,20 @@ export class NavigationSystem {
     let raw = null;
     const sampler = this.environment?.sampleSurface;
     if (typeof sampler === 'function') {
+      const surfaceOptions=queryOptions.unconstrained?undefined:{
+        referenceY:finite(queryOptions.referenceY,point.y),
+        maxStep:Math.max(0,finite(queryOptions.maxStep,.36)),
+        ...(Number.isFinite(queryOptions.minY)?{minY:queryOptions.minY}:null),
+      };
       try {
         raw = sampler.length <= 1
-          ? sampler.call(this.environment, point.clone())
-          : sampler.call(this.environment, point.x, point.z);
+          ? sampler.call(this.environment, point.clone(),surfaceOptions)
+          : sampler.call(this.environment, point.x, point.z,surfaceOptions);
       } catch {
         try {
           raw = sampler.length <= 1
-            ? sampler.call(this.environment, point.x, point.z)
-            : sampler.call(this.environment, point.clone());
+            ? sampler.call(this.environment, point.x, point.z,surfaceOptions)
+            : sampler.call(this.environment, point.clone(),surfaceOptions);
         } catch {
           raw = null;
         }
@@ -236,7 +275,7 @@ export class NavigationSystem {
   }
 
   _obstacleBlocks(obstacle, point, radius, options) {
-    if (!obstacle || obstacle.disabled || obstacle.passable || obstacle.walkable ||
+    if (!obstacle || obstacle.disabled || obstacle.enabled===false || obstacle.permeability>=1 || obstacle.navigationPassable || obstacle.passable || obstacle.walkable ||
         obstacle.collision === false || obstacle.solid === false) return false;
     if (options.ignore && (options.ignore === obstacle || options.ignore === obstacle.id ||
         options.ignore.has?.(obstacle) || options.ignore.has?.(obstacle.id))) return false;
@@ -249,19 +288,27 @@ export class NavigationSystem {
       const height = finite(obstacle.height, Infinity);
       const baseY = finite(obstacle.baseY, center.y - (Number.isFinite(height) ? height * .5 : 0));
       const topY = Number.isFinite(height) ? baseY + height : Infinity;
-      const verticallyRelevant = point.y < topY - finite(options.stepTolerance, .025);
+      const tolerance=finite(options.stepTolerance,.025);
+      const bodyHeight=finite(options.bodyHeight,finite(options.height,.31));
+      const verticallyRelevant = point.y+bodyHeight>baseY+tolerance&&point.y<topY-tolerance;
       return verticallyRelevant && dx * dx + dz * dz < Math.pow(obstacleRadius + radius, 2);
     }
+
+    const oriented=orientedColliderBlocks(obstacle,point,radius,options);
+    if(oriented!==null) return oriented;
 
     const box = obstacleBox(obstacle);
     if (!box) return false;
     const insideXZ = point.x >= box.min.x - radius && point.x <= box.max.x + radius &&
       point.z >= box.min.z - radius && point.z <= box.max.z + radius;
     if (!insideXZ) return false;
+    const tolerance=finite(options.stepTolerance,.025);
+    const bodyHeight=finite(options.bodyHeight,finite(options.height,.31));
+    if(point.y+bodyHeight<=box.min.y+tolerance||point.y>=box.max.y-tolerance) return false;
     const top = box.max.y;
     const maxStep = finite(options.maxStep, .22);
     if ((obstacle.step || obstacle.walkableTop) && top - point.y <= maxStep) return false;
-    return point.y < top - finite(options.stepTolerance, .025);
+    return true;
   }
 
   isBlocked(position, radius = .18, options = {}) {
@@ -289,7 +336,7 @@ export class NavigationSystem {
       : new THREE.Vector3(finite(positionOrX, 0), -Infinity, finite(z, 0));
     let top = -Infinity;
     for (const obstacle of this._obstacles()) {
-      if (!obstacle || obstacle.disabled || obstacle.passable || obstacle.collision === false) continue;
+      if (!obstacle || obstacle.disabled || obstacle.enabled===false || obstacle.permeability>=1 || obstacle.passable || obstacle.collision === false) continue;
       const center = obstaclePosition(obstacle);
       const obstacleRadius = finite(obstacle.radius, finite(obstacle.collisionRadius, NaN));
       if (Number.isFinite(obstacleRadius)) {
@@ -347,16 +394,16 @@ export class NavigationSystem {
 
   findPath(start, target, options = {}) {
     const settings = {
+      ...options,
       cellSize: clamp(finite(options.cellSize, .32), .12, 1),
       radius: Math.max(.02, finite(options.radius, .18)),
       maxStep: Math.max(.03, finite(options.maxStep, .24)),
       maxSlope: finite(options.maxSlope, Math.PI * .235),
-      maxNodes: Math.max(64, finite(options.maxNodes, 4500)),
+      maxNodes: Math.round(Math.max(64, finite(options.maxNodes, 4500))),
       margin: Math.max(.8, finite(options.margin, 2.2)),
       allowDiagonal: options.allowDiagonal !== false,
       allowPartial: options.allowPartial !== false,
       smooth: options.smooth !== false,
-      ...options,
     };
     const startPoint = this.sampleSurface(vector3(start)).position;
     const requestedGoal = this.sampleSurface(vector3(target)).position;
@@ -409,6 +456,7 @@ export class NavigationSystem {
     const keyOf = (x, z) => `${x},${z}`;
     const pointAt = (x, z) => this.sampleSurface(
       new THREE.Vector3(minX + x * settings.cellSize, startPoint.y, minZ + z * settings.cellSize),
+      undefined, startPoint.y, {unconstrained:true},
     ).position;
 
     const open = new MinHeap();

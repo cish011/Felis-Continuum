@@ -18,6 +18,15 @@ export const CAT_SKIN_REGIONS = Object.freeze({
   tail: 5,
 });
 
+export const CAT_SKIN_PART_BY_REGION = Object.freeze([
+  'torso',
+  'head',
+  'frontLeg',
+  'hindLeg',
+  'paw',
+  'tail',
+]);
+
 export const CAT_SKIN_QUALITY = Object.freeze({
   low: [35, 55, 113],
   balanced: [43, 67, 139],
@@ -33,64 +42,78 @@ export const DEFAULT_CAT_SKIN_OPTIONS = Object.freeze({
 });
 
 const SKIN_BOUNDS = Object.freeze({
-  min: Object.freeze([-0.105, -0.205, -0.515]),
+  min: Object.freeze([-0.105, -0.205, -0.530]),
   max: Object.freeze([0.105, 0.180, 0.295]),
 });
 
 const TORSO_RINGS = Object.freeze([
-  Object.freeze({ z: -0.205, rx: 0.026, ry: 0.0275, y: 0.0025 }),
-  Object.freeze({ z: -0.180, rx: 0.050, ry: 0.0450, y: 0.0020 }),
-  Object.freeze({ z: -0.140, rx: 0.060, ry: 0.0545, y: 0.0025 }),
-  Object.freeze({ z: -0.095, rx: 0.059, ry: 0.0570, y: 0.0030 }),
-  Object.freeze({ z: -0.050, rx: 0.050, ry: 0.0455, y: 0.0045 }),
-  Object.freeze({ z: 0.000, rx: 0.054, ry: 0.0500, y: 0.0020 }),
-  Object.freeze({ z: 0.055, rx: 0.066, ry: 0.0630, y: -0.0050 }),
-  Object.freeze({ z: 0.105, rx: 0.070, ry: 0.0700, y: -0.0100 }),
-  Object.freeze({ z: 0.145, rx: 0.061, ry: 0.0645, y: -0.0125 }),
-  Object.freeze({ z: 0.175, rx: 0.045, ry: 0.0465, y: -0.0085 }),
+  Object.freeze({ z:-0.220, rx:0.015, ry:0.017, y:0.028, ventralTaper:0.10, dorsalTaper:0.04 }),
+  Object.freeze({ z:-0.202, rx:0.043, ry:0.040, y:0.013, ventralTaper:0.18, dorsalTaper:0.06 }),
+  Object.freeze({ z:-0.166, rx:0.064, ry:0.056, y:0.003, ventralTaper:0.25, dorsalTaper:0.08 }),
+  Object.freeze({ z:-0.125, rx:0.066, ry:0.057, y:0.004, ventralTaper:0.28, dorsalTaper:0.09 }),
+  Object.freeze({ z:-0.082, rx:0.052, ry:0.044, y:0.009, ventralTaper:0.36, dorsalTaper:0.10 }),
+  Object.freeze({ z:-0.045, rx:0.047, ry:0.038, y:0.012, ventralTaper:0.42, dorsalTaper:0.11 }),
+  Object.freeze({ z:-0.010, rx:0.051, ry:0.045, y:0.009, ventralTaper:0.40, dorsalTaper:0.10 }),
+  Object.freeze({ z: 0.028, rx:0.060, ry:0.058, y:0.001, ventralTaper:0.46, dorsalTaper:0.10 }),
+  Object.freeze({ z: 0.070, rx:0.069, ry:0.068, y:-0.003, ventralTaper:0.52, dorsalTaper:0.09 }),
+  Object.freeze({ z: 0.108, rx:0.071, ry:0.074, y:-0.004, ventralTaper:0.56, dorsalTaper:0.08 }),
+  Object.freeze({ z: 0.142, rx:0.063, ry:0.056, y:0.008, ventralTaper:0.52, dorsalTaper:0.08 }),
+  Object.freeze({ z: 0.170, rx:0.049, ry:0.036, y:0.020, ventralTaper:0.44, dorsalTaper:0.07 }),
+  Object.freeze({ z: 0.190, rx:0.036, ry:0.025, y:0.035, ventralTaper:0.30, dorsalTaper:0.05 }),
 ]);
 
 // The skull stations are already translated into body space.  The flattened
 // forehead, zygomatic width and tapered rostrum deliberately avoid a sphere.
 const SKULL_RINGS = Object.freeze([
-  Object.freeze({ z: 0.158, rx: 0.033, ry: 0.0255, y: 0.0775 }),
-  Object.freeze({ z: 0.185, rx: 0.041, ry: 0.0360, y: 0.0800 }),
-  Object.freeze({ z: 0.215, rx: 0.048, ry: 0.0370, y: 0.0760 }),
-  Object.freeze({ z: 0.238, rx: 0.040, ry: 0.0325, y: 0.0715 }),
-  Object.freeze({ z: 0.256, rx: 0.032, ry: 0.0250, y: 0.0650 }),
+  Object.freeze({ z:0.155, rx:0.026, ry:0.023, y:0.081 }),
+  Object.freeze({ z:0.162, rx:0.041, ry:0.034, y:0.085 }),
+  Object.freeze({ z:0.178, rx:0.049, ry:0.040, y:0.086 }),
+  Object.freeze({ z:0.193, rx:0.050, ry:0.040, y:0.084 }),
+  Object.freeze({ z:0.207, rx:0.047, ry:0.036, y:0.080 }),
+  Object.freeze({ z:0.218, rx:0.039, ry:0.029, y:0.074 }),
+  Object.freeze({ z:0.225, rx:0.030, ry:0.021, y:0.068 }),
 ]);
 
 const FORE_LANDMARKS = Object.freeze({
   left: Object.freeze({
-    shoulder: Object.freeze([-0.055, 0.000, 0.145]),
-    elbow: Object.freeze([-0.052, -0.078, 0.083]),
-    carpus: Object.freeze([-0.047, -0.143, 0.144]),
-    foot: Object.freeze([-0.045, -0.181, 0.181]),
+    shoulder: Object.freeze([-0.053, -0.004, 0.143]),
+    elbow: Object.freeze([-0.050, -0.076, 0.086]),
+    carpus: Object.freeze([-0.045, -0.151, 0.139]),
+    mcp: Object.freeze([-0.043, -0.177, 0.159]),
+    foot: Object.freeze([-0.043, -0.182, 0.181]),
   }),
   right: Object.freeze({
-    shoulder: Object.freeze([0.055, 0.000, 0.145]),
-    elbow: Object.freeze([0.052, -0.078, 0.083]),
-    carpus: Object.freeze([0.047, -0.143, 0.144]),
-    foot: Object.freeze([0.045, -0.181, 0.181]),
+    shoulder: Object.freeze([0.053, -0.004, 0.143]),
+    elbow: Object.freeze([0.050, -0.076, 0.086]),
+    carpus: Object.freeze([0.045, -0.151, 0.139]),
+    mcp: Object.freeze([0.043, -0.177, 0.159]),
+    foot: Object.freeze([0.043, -0.182, 0.181]),
   }),
 });
 
 const HIND_LANDMARKS = Object.freeze({
   left: Object.freeze({
-    hip: Object.freeze([-0.023, 0.008, -0.138]),
-    stifle: Object.freeze([-0.044, -0.068, -0.075]),
-    hock: Object.freeze([-0.046, -0.136, -0.162]),
-    foot: Object.freeze([-0.043, -0.181, -0.095]),
+    hip: Object.freeze([-0.041, 0.006, -0.145]),
+    stifle: Object.freeze([-0.050, -0.071, -0.077]),
+    hock: Object.freeze([-0.048, -0.145, -0.164]),
+    mtp: Object.freeze([-0.043, -0.178, -0.121]),
+    foot: Object.freeze([-0.043, -0.182, -0.091]),
   }),
   right: Object.freeze({
-    hip: Object.freeze([0.023, 0.008, -0.138]),
-    stifle: Object.freeze([0.044, -0.068, -0.075]),
-    hock: Object.freeze([0.046, -0.136, -0.162]),
-    foot: Object.freeze([0.043, -0.181, -0.095]),
+    hip: Object.freeze([0.041, 0.006, -0.145]),
+    stifle: Object.freeze([0.050, -0.071, -0.077]),
+    hock: Object.freeze([0.048, -0.145, -0.164]),
+    mtp: Object.freeze([0.043, -0.178, -0.121]),
+    foot: Object.freeze([0.043, -0.182, -0.091]),
   }),
 });
 
 const TAIL_LENGTHS = Object.freeze(Array.from({ length: 14 }, (_, index) => 0.023 - index * 0.00028));
+const TORSO_SECTION_BONES = Object.freeze([
+  Object.freeze({ name:'pelvis', centerZ:-0.150 }),
+  Object.freeze({ name:'lumbar', centerZ:-0.045 }),
+  Object.freeze({ name:'thorax', centerZ:0.108 }),
+]);
 
 function clamp(value, minimum, maximum) {
   return Math.max(minimum, Math.min(maximum, value));
@@ -98,6 +121,11 @@ function clamp(value, minimum, maximum) {
 
 function mix(a, b, amount) {
   return a + (b - a) * amount;
+}
+
+function smoothstep(edge0, edge1, value) {
+  const t=clamp((value-edge0)/(edge1-edge0),0,1);
+  return t*t*(3-2*t);
 }
 
 function smoothMin(a, b, radius) {
@@ -149,8 +177,14 @@ function makeLoftDistance(rings) {
       const rx = mix(left.rx, right.rx, t);
       const ry = mix(left.ry, right.ry, t);
       const centerY = mix(left.y, right.y, t);
-      const qx = x / rx;
       const qy = (y - centerY) / ry;
+      const ventralTaper=mix(left.ventralTaper ?? 0,right.ventralTaper ?? 0,t);
+      const dorsalTaper=mix(left.dorsalTaper ?? 0,right.dorsalTaper ?? 0,t);
+      const verticalTaper=qy<0
+        ? ventralTaper*Math.pow(Math.min(1,-qy),1.35)
+        : dorsalTaper*Math.pow(Math.min(1,qy),2);
+      const localHalfWidth=rx*Math.max(.48,1-verticalTaper);
+      const qx = x / localHalfWidth;
       return (Math.sqrt(qx * qx + qy * qy) - 1) * Math.min(rx, ry);
     }
     return 1;
@@ -212,9 +246,12 @@ function transformMatrix(position, rotation = [0, 0, 0]) {
 
 function createTailLandmarks() {
   const segments = [];
-  let start = [0, 0.025, -0.205];
+  // Segment zero begins well inside the sacral envelope. The visible tail
+  // emerges only after the centreline has traversed the pelvis, avoiding an
+  // annular hose joint at the rump.
+  let start = [0, 0.034, -0.198];
   for (let index = 0; index < TAIL_LENGTHS.length; index += 1) {
-    const lift = 0.33 * Math.exp(-index / 4.2) + 0.025;
+    const lift = 0.151 * Math.exp(-index / 4.2) - 0.018 * (index / (TAIL_LENGTHS.length - 1));
     const yaw = Math.sin(index * 0.42) * 0.025;
     const cosPitch = Math.cos(lift);
     const direction = [Math.sin(yaw) * cosPitch, Math.sin(lift), -Math.cos(yaw) * cosPitch];
@@ -251,8 +288,13 @@ function createField(options) {
   };
 
   addBone('torso', IDENTITY);
+  for(const section of TORSO_SECTION_BONES) {
+    addBone(section.name,transformMatrix([0,0,section.centerZ]));
+  }
   addBone('neck', transformMatrix([0, 0.030, 0.170], [-0.20, 0, 0]));
   addBone('head', transformMatrix([0, 0.078, 0.170]));
+  addBone('frontLeft.scapula', transformMatrix([-0.056, 0.037, 0.112], [-0.17, 0, 0]));
+  addBone('frontRight.scapula', transformMatrix([0.056, 0.037, 0.112], [-0.17, 0, 0]));
 
   addPrimitive({
     name: 'pelvis-waist-ribcage',
@@ -263,19 +305,27 @@ function createField(options) {
   });
 
   addPrimitive({
-    name: 'sternal-keel',
-    bone: 'torso',
+    name: 'sacral-tail-transition',
+    bone: 'pelvis',
     region: CAT_SKIN_REGIONS.torso,
-    distance: makeCapsuleDistance([0, -0.040, 0.045], [0, -0.050, 0.135], [0.034, 0.025, 0.030], [0.030, 0.023, 0.026]),
-    blend: 0.004,
+    distance: makeCapsuleDistance([0, 0.027, -0.168], [0, 0.034, -0.218], [0.030, 0.025, 0.038], [0.016, 0.016, 0.020]),
+    blend: 0.014,
   });
 
   addPrimitive({
-    name: 'cervical-transition',
+    name: 'cervical-column',
     bone: 'neck',
     region: CAT_SKIN_REGIONS.torso,
-    distance: makeCapsuleDistance([0, 0.006, 0.151], [0, 0.076, 0.178], [0.043, 0.042, 0.041], [0.034, 0.035, 0.034]),
-    blend: 0.009,
+    distance: makeCapsuleDistance([0, 0.026, 0.151], [0, 0.075, 0.157], [0.024, 0.018, 0.020], [0.025, 0.020, 0.019]),
+    blend: 0.012,
+  });
+
+  addPrimitive({
+    name: 'dorsal-nuchal-bridge',
+    bone: 'neck',
+    region: CAT_SKIN_REGIONS.torso,
+    distance: makeCapsuleDistance([0, 0.055, 0.143], [0, 0.088, 0.158], [0.032, 0.014, 0.022], [0.027, 0.016, 0.019]),
+    blend: 0.012,
   });
 
   addPrimitive({
@@ -291,21 +341,21 @@ function createField(options) {
       name: `${sign < 0 ? 'left' : 'right'}-zygomatic-arch`,
       bone: 'head',
       region: CAT_SKIN_REGIONS.head,
-      distance: makeEllipsoidDistance([sign * 0.032, 0.073, 0.215], [0.014, 0.018, 0.024]),
-      blend: 0.005,
+      distance: makeEllipsoidDistance([sign * 0.033, 0.068, 0.193], [0.017, 0.019, 0.020]),
+      blend: 0.007,
     });
     addPrimitive({
       name: `${sign < 0 ? 'left' : 'right'}-whisker-pad`,
       bone: 'head',
       region: CAT_SKIN_REGIONS.head,
-      distance: makeEllipsoidDistance([sign * 0.017, 0.056, 0.259], [0.019, 0.014, 0.021]),
-      blend: 0.004,
+      distance: makeEllipsoidDistance([sign * 0.0155, 0.056, 0.229], [0.017, 0.0115, 0.010]),
+      blend: 0.010,
     });
     addPrimitive({
       name: `${sign < 0 ? 'left' : 'right'}-auricular-root`,
       bone: 'head',
       region: CAT_SKIN_REGIONS.head,
-      distance: makeEllipsoidDistance([sign * 0.031, 0.109, 0.179], [0.020, 0.018, 0.016]),
+      distance: makeEllipsoidDistance([sign * 0.031, 0.109, 0.177], [0.020, 0.018, 0.015]),
       blend: 0.004,
     });
   }
@@ -314,15 +364,15 @@ function createField(options) {
     name: 'nasal-bridge-and-rostrum',
     bone: 'head',
     region: CAT_SKIN_REGIONS.head,
-    distance: makeCapsuleDistance([0, 0.084, 0.218], [0, 0.062, 0.270], [0.024, 0.019, 0.020], [0.011, 0.010, 0.013]),
-    blend: 0.005,
+    distance: makeCapsuleDistance([0, 0.090, 0.219], [0, 0.061, 0.240], [0.015, 0.010, 0.011], [0.0085, 0.0075, 0.008]),
+    blend: 0.008,
   });
   addPrimitive({
     name: 'mandible',
     bone: 'head',
     region: CAT_SKIN_REGIONS.head,
-    distance: makeCapsuleDistance([0, 0.050, 0.208], [0, 0.044, 0.268], [0.022, 0.014, 0.020], [0.016, 0.010, 0.012]),
-    blend: 0.004,
+    distance: makeCapsuleDistance([0, 0.054, 0.207], [0, 0.050, 0.234], [0.020, 0.010, 0.012], [0.012, 0.0075, 0.007]),
+    blend: 0.007,
   });
 
   const addLimb = (sideName, landmarks, front) => {
@@ -334,52 +384,132 @@ function createField(options) {
     const proximalStart = front ? landmarks.shoulder : landmarks.hip;
     const proximalEnd = front ? landmarks.elbow : landmarks.stifle;
     const middleEnd = front ? landmarks.carpus : landmarks.hock;
+    const distalEnd = front ? landmarks.mcp : landmarks.mtp;
     const region = front ? CAT_SKIN_REGIONS.forelimb : CAT_SKIN_REGIONS.hindlimb;
 
     addBone(`${prefix}.${proximalName}`, segmentMatrix(proximalStart, proximalEnd));
     addBone(`${prefix}.${middleName}`, segmentMatrix(proximalEnd, middleEnd));
-    addBone(`${prefix}.${distalName}`, segmentMatrix(middleEnd, landmarks.foot));
-    const pawCenter = [landmarks.foot[0], landmarks.foot[1] + 0.0105, landmarks.foot[2]];
-    addBone(`${prefix}.${pawName}`, transformMatrix(pawCenter));
+    addBone(`${prefix}.${distalName}`, segmentMatrix(middleEnd, distalEnd));
+    const contactOffset = front ? 0.0085 : 0.0080;
+    const pawBoneCenter = [landmarks.foot[0], landmarks.foot[1] + contactOffset, landmarks.foot[2]];
+    const pawCenter = [landmarks.foot[0], landmarks.foot[1] + contactOffset, landmarks.foot[2] - 0.002];
+    addBone(`${prefix}.${pawName}`, transformMatrix(pawBoneCenter));
+
+    if(front) {
+      const sideSign=landmarks.shoulder[0]<0?-1:1;
+      addPrimitive({
+        name: `${prefix}-scapular-mantle`,
+        bone: `${prefix}.scapula`,
+        region,
+        distance: makeCapsuleDistance(
+          [sideSign*0.044,0.045,0.096],
+          [sideSign*0.052,-0.006,0.142],
+          [0.011,0.010,0.026],
+          [0.017,0.016,0.016],
+        ),
+        blend:0.009,
+      });
+    } else {
+      addPrimitive({
+        name: `${prefix}-pelvic-gluteal-fusion`,
+        bone: 'pelvis',
+        region,
+        distance: makeEllipsoidDistance(
+          [landmarks.hip[0] < 0 ? -0.044 : 0.044,0.006,-0.151],
+          [0.029,0.036,0.044],
+        ),
+        blend:0.014,
+      });
+    }
 
     addPrimitive({
       name: `${prefix}-proximal-muscle`,
       bone: `${prefix}.${proximalName}`,
       region,
-      distance: makeCapsuleDistance(
-        proximalStart,
-        proximalEnd,
-        front ? [0.019, 0.019, 0.016] : [0.031, 0.028, 0.024],
-        front ? [0.012, 0.012, 0.010] : [0.015, 0.015, 0.013],
-      ),
-      blend: front ? 0.006 : 0.008,
+      distance: front
+        ? makeCapsuleDistance(proximalStart,proximalEnd,[0.018,0.021,0.017],[0.013,0.014,0.011])
+        : makeCapsuleDistance(
+          proximalStart,
+          [landmarks.hip[0] < 0 ? -0.048 : 0.048,-0.040,-0.108],
+          [0.033,0.036,0.031],
+          [0.028,0.031,0.026],
+        ),
+      blend: front ? 0.009 : 0.011,
     });
+    if(!front) {
+      addPrimitive({
+        name:`${prefix}-distal-thigh`,
+        bone:`${prefix}.${proximalName}`,
+        region,
+        distance:makeCapsuleDistance(
+          [landmarks.hip[0] < 0 ? -0.048 : 0.048,-0.040,-0.108],
+          proximalEnd,
+          [0.028,0.031,0.026],
+          [0.017,0.019,0.015],
+        ),
+        blend:0.011,
+      });
+    }
     addPrimitive({
       name: `${prefix}-middle-muscle`,
       bone: `${prefix}.${middleName}`,
       region,
-      distance: makeCapsuleDistance(
-        proximalEnd,
-        middleEnd,
-        front ? [0.014, 0.014, 0.012] : [0.018, 0.018, 0.015],
-        front ? [0.008, 0.009, 0.007] : [0.009, 0.010, 0.008],
-      ),
-      blend: 0.005,
+      distance: front
+        ? makeCapsuleDistance(proximalEnd,middleEnd,[0.015,0.016,0.013],[0.008,0.009,0.007])
+        : makeCapsuleDistance(
+          proximalEnd,
+          [landmarks.hock[0] < 0 ? -0.050 : 0.050,-0.112,-0.125],
+          [0.020,0.023,0.017],
+          [0.016,0.019,0.014],
+        ),
+      blend: front ? 0.006 : 0.008,
     });
+    if(!front) {
+      addPrimitive({
+        name:`${prefix}-distal-crus`,
+        bone:`${prefix}.${middleName}`,
+        region,
+        distance:makeCapsuleDistance(
+          [landmarks.hock[0] < 0 ? -0.050 : 0.050,-0.112,-0.125],
+          middleEnd,
+          [0.014,0.016,0.012],
+          [0.009,0.010,0.008],
+        ),
+        blend:0.007,
+      });
+    }
     addPrimitive({
       name: `${prefix}-digitigrade-metapodial`,
       bone: `${prefix}.${distalName}`,
       region,
       distance: makeCapsuleDistance(
         middleEnd,
-        landmarks.foot,
+        distalEnd,
         front ? [0.0080, 0.0080, 0.0068] : [0.0090, 0.0095, 0.0075],
         front ? [0.0065, 0.0070, 0.0060] : [0.0068, 0.0072, 0.0062],
       ),
       blend: 0.004,
     });
 
-    const pawRadii = front ? [0.019, 0.0105, 0.026] : [0.017, 0.010, 0.029];
+    const bridgeEnd=[
+      landmarks.foot[0],
+      landmarks.foot[1]+(front?0.0065:0.0060),
+      landmarks.foot[2]-(front?0.010:0.012),
+    ];
+    addPrimitive({
+      name:`${prefix}-paw-chain-bridge`,
+      bone:`${prefix}.${distalName}`,
+      region,
+      distance:makeCapsuleDistance(
+        distalEnd,
+        bridgeEnd,
+        front?[0.0065,0.0070,0.0060]:[0.0068,0.0072,0.0062],
+        front?[0.0085,0.0075,0.0080]:[0.0080,0.0072,0.0085],
+      ),
+      blend:0.006,
+    });
+
+    const pawRadii = front ? [0.0135, 0.0085, 0.0145] : [0.0125, 0.0080, 0.0150];
     addPrimitive({
       name: `${prefix}-metacarpal-pad-and-paw`,
       bone: `${prefix}.${pawName}`,
@@ -387,18 +517,18 @@ function createField(options) {
       distance: makeEllipsoidDistance(pawCenter, pawRadii),
       blend: 0.004,
     });
-    const toeSpread = front ? 0.0064 : 0.0059;
+    const toeOffsets=[-0.0065,-0.0022,0.0022,0.0065];
     for (let digit = 0; digit < 4; digit += 1) {
-      const lateral = (digit - 1.5) * toeSpread;
+      const lateral = toeOffsets[digit];
       addPrimitive({
         name: `${prefix}-digit-${digit}`,
         bone: `${prefix}.${pawName}`,
         region: CAT_SKIN_REGIONS.paw,
         distance: makeEllipsoidDistance(
-          [pawCenter[0] + lateral, pawCenter[1] - 0.002, pawCenter[2] + 0.020 + Math.abs(digit - 1.5) * 0.0007],
-          [0.0055, 0.0060, front ? 0.010 : 0.011],
+          [landmarks.foot[0] + lateral, landmarks.foot[1] + (front ? 0.0055 : 0.0052), landmarks.foot[2] + (front ? 0.0115 : 0.0125)],
+          front ? [0.0040,0.0054,0.0060] : [0.0039,0.0051,0.0060],
         ),
-        blend: 0.003,
+        blend: 0.0025,
       });
     }
   };
@@ -408,28 +538,12 @@ function createField(options) {
   addLimb('left', HIND_LANDMARKS.left, false);
   addLimb('right', HIND_LANDMARKS.right, false);
 
-  // Thin scapular sheets are an attachment transition, not visible balls.
-  for (const [sideName, sign] of [['left', -1], ['right', 1]]) {
-    const prefix = `front${sideName[0].toUpperCase()}${sideName.slice(1)}`;
-    addPrimitive({
-      name: `${prefix}-scapular-slip`,
-      bone: `${prefix}.upper`,
-      region: CAT_SKIN_REGIONS.forelimb,
-      distance: makeCapsuleDistance(
-        [sign * 0.048, 0.054, 0.103],
-        [sign * 0.055, 0.000, 0.145],
-        [0.012, 0.020, 0.015],
-        [0.018, 0.020, 0.017],
-      ),
-      blend: 0.008,
-    });
-  }
-
   for (let index = 0; index < TAIL_LANDMARKS.length; index += 1) {
     const landmark = TAIL_LANDMARKS[index];
     const bone = `tail.${index}`;
-    const startRadius = mix(0.0115, 0.0044, index / (TAIL_LANDMARKS.length - 1));
-    const endRadius = mix(0.0115, 0.0042, (index + 1) / TAIL_LANDMARKS.length);
+    const authoredRadii=[0.0170,0.0150,0.0130];
+    const startRadius = authoredRadii[index] ?? mix(0.0105, 0.0044, (index - 2) / (TAIL_LANDMARKS.length - 3));
+    const endRadius = authoredRadii[index + 1] ?? mix(0.0105, 0.0042, (index - 1) / (TAIL_LANDMARKS.length - 3));
     addBone(bone, segmentMatrix(landmark.start, landmark.end));
     addPrimitive({
       name: `tail-skin-${index}`,
@@ -441,7 +555,7 @@ function createField(options) {
         [startRadius, startRadius, startRadius],
         [endRadius, endRadius, endRadius],
       ),
-      blend: index === 0 ? 0.008 : 0.004,
+      blend: index === 0 ? 0.012 : index < 3 ? 0.006 : 0.004,
     });
   }
 
@@ -452,29 +566,34 @@ function createField(options) {
     if (index !== undefined) bones[index].restMatrix.copy(matrix);
   };
   setRest('torso', IDENTITY);
+  for(const section of TORSO_SECTION_BONES) {
+    setRest(section.name,transformMatrix([0,0,section.centerZ]));
+  }
   setRest('neck', transformMatrix([0, 0.030, 0.170], [-0.20, 0, 0]));
   setRest('head', transformMatrix([0, 0.078, 0.170]));
+  setRest('frontLeft.scapula', transformMatrix([-0.056, 0.037, 0.112], [-0.17, 0, 0]));
+  setRest('frontRight.scapula', transformMatrix([0.056, 0.037, 0.112], [-0.17, 0, 0]));
   for (const [sideName, landmarks] of Object.entries(FORE_LANDMARKS)) {
     const prefix = `front${sideName[0].toUpperCase()}${sideName.slice(1)}`;
     setRest(`${prefix}.upper`, segmentMatrix(landmarks.shoulder, landmarks.elbow));
     setRest(`${prefix}.lower`, segmentMatrix(landmarks.elbow, landmarks.carpus));
-    setRest(`${prefix}.metapodial`, segmentMatrix(landmarks.carpus, landmarks.foot));
-    setRest(`${prefix}.paw`, transformMatrix([landmarks.foot[0], landmarks.foot[1] + 0.0105, landmarks.foot[2]]));
+    setRest(`${prefix}.metapodial`, segmentMatrix(landmarks.carpus, landmarks.mcp));
+    setRest(`${prefix}.paw`, transformMatrix([landmarks.foot[0], landmarks.foot[1] + 0.0085, landmarks.foot[2]]));
   }
   for (const [sideName, landmarks] of Object.entries(HIND_LANDMARKS)) {
     const prefix = `hind${sideName[0].toUpperCase()}${sideName.slice(1)}`;
     setRest(`${prefix}.upper`, segmentMatrix(landmarks.hip, landmarks.stifle));
     setRest(`${prefix}.lower`, segmentMatrix(landmarks.stifle, landmarks.hock));
-    setRest(`${prefix}.metapodial`, segmentMatrix(landmarks.hock, landmarks.foot));
-    setRest(`${prefix}.paw`, transformMatrix([landmarks.foot[0], landmarks.foot[1] + 0.0105, landmarks.foot[2]]));
+    setRest(`${prefix}.metapodial`, segmentMatrix(landmarks.hock, landmarks.mtp));
+    setRest(`${prefix}.paw`, transformMatrix([landmarks.foot[0], landmarks.foot[1] + 0.0080, landmarks.foot[2]]));
   }
   TAIL_LANDMARKS.forEach((landmark, index) => setRest(`tail.${index}`, segmentMatrix(landmark.start, landmark.end)));
 
   const socketDistance = options.eyeSockets === false
     ? null
     : (x, y, z) => Math.min(
-      ellipsoidDistance(x, y, z, -0.027, 0.087, 0.241, 0.0100, 0.0077, 0.021),
-      ellipsoidDistance(x, y, z, 0.027, 0.087, 0.241, 0.0100, 0.0077, 0.021),
+      ellipsoidDistance(x, y, z, -0.028, 0.087, 0.212, 0.0095, 0.0075, 0.013),
+      ellipsoidDistance(x, y, z, 0.028, 0.087, 0.212, 0.0095, 0.0075, 0.013),
     );
 
   const distance = (x, y, z) => {
@@ -492,7 +611,14 @@ function createField(options) {
 
 function resolveResolution(options) {
   if (Array.isArray(options.resolution) && options.resolution.length === 3) {
-    return options.resolution.map(value => clamp(Math.round(Number(value) || 0), 12, 240));
+    // Below the low preset a four-millimetre tail tip can fall between grid
+    // samples and become a tiny detached island.  Preserve the topology even
+    // when a caller supplies an aggressively small custom grid.
+    return options.resolution.map((value, axis) => clamp(
+      Math.round(Number(value) || 0),
+      CAT_SKIN_QUALITY.low[axis],
+      240,
+    ));
   }
   return [...(CAT_SKIN_QUALITY[options.quality] ?? CAT_SKIN_QUALITY.balanced)];
 }
@@ -720,7 +846,42 @@ function addSkinningAttributes(geometry, field, bounds) {
     for (let index = 0; index < field.primitives.length; index += 1) {
       const primitive = field.primitives[index];
       const distance = primitive.distance(x, y, z);
-      if (distance < byBone[primitive.boneIndex]) byBone[primitive.boneIndex] = distance;
+      if(primitive.name==='pelvis-waist-ribcage') {
+        // Explicit longitudinal weights prevent all three spine frames from
+        // averaging into another rigid capsule. Pelvis dominates the croup,
+        // lumbar dominates the tuck, and thorax dominates the ribcage.
+        const pelvisWeight=1-smoothstep(-0.125,-0.055,z);
+        const thoraxWeight=smoothstep(-0.015,0.075,z);
+        const lumbarWeight=Math.max(0,1-pelvisWeight-thoraxWeight);
+        const sectionWeights={pelvis:pelvisWeight,lumbar:lumbarWeight,thorax:thoraxWeight};
+        for(const section of TORSO_SECTION_BONES) {
+          const weight=Math.max(1e-5,sectionWeights[section.name]*0.92);
+          const sectionIndex=field.boneIndex.get(section.name);
+          byBone[sectionIndex]=Math.min(byBone[sectionIndex],distance-Math.log(weight)*0.009);
+        }
+        byBone[primitive.boneIndex]=Math.min(byBone[primitive.boneIndex],distance-Math.log(0.08)*0.009);
+      } else {
+        if(distance<byBone[primitive.boneIndex]) byBone[primitive.boneIndex]=distance;
+        if(primitive.name.endsWith('-scapular-mantle')) {
+          const prefix=primitive.name.slice(0,-'-scapular-mantle'.length);
+          const upperIndex=field.boneIndex.get(`${prefix}.upper`);
+          const thoraxIndex=field.boneIndex.get('thorax');
+          const lowerHalf=y<0.024;
+          byBone[upperIndex]=Math.min(byBone[upperIndex],distance+(lowerHalf?0.001:0.006));
+          byBone[thoraxIndex]=Math.min(byBone[thoraxIndex],distance+(lowerHalf?0.005:0.001));
+        } else if(primitive.name.endsWith('-pelvic-gluteal-fusion')) {
+          const prefix=primitive.name.slice(0,-'-pelvic-gluteal-fusion'.length);
+          const upperIndex=field.boneIndex.get(`${prefix}.upper`);
+          byBone[upperIndex]=Math.min(byBone[upperIndex],distance+0.003);
+        } else if(primitive.name.endsWith('-distal-thigh')) {
+          const pelvisIndex=field.boneIndex.get('pelvis');
+          byBone[pelvisIndex]=Math.min(byBone[pelvisIndex],distance+0.010);
+        } else if(primitive.name.endsWith('-paw-chain-bridge')) {
+          const prefix=primitive.name.slice(0,-'-paw-chain-bridge'.length);
+          const pawIndex=field.boneIndex.get(`${prefix}.paw`);
+          byBone[pawIndex]=Math.min(byBone[pawIndex],distance+0.0015);
+        }
+      }
       if (distance < nearestDistance) {
         nearestDistance = distance;
         nearestRegion = primitive.region;
@@ -805,7 +966,7 @@ export function generateContinuousCatSkinGeometry(options = {}) {
 }
 
 function copyObjectMatrix(targetBone, sourceObject, parentMatrix = null, temporary = new THREE.Matrix4()) {
-  if (!sourceObject) return false;
+  if (!targetBone || !sourceObject) return false;
   sourceObject.updateMatrix?.();
   if (parentMatrix) targetBone.matrix.copy(temporary.multiplyMatrices(parentMatrix, sourceObject.matrix));
   else targetBone.matrix.copy(sourceObject.matrix);
@@ -837,8 +998,11 @@ export class ContinuousCatSkin {
     this.mesh.castShadow = true;
     this.mesh.receiveShadow = true;
     this.mesh.frustumCulled = false;
-    this.mesh.userData.catPart = 'cat';
+    // Existing interaction code sees a conservative torso fallback.  Newer
+    // callers can use resolvePetPart(intersection) for per-face semantics.
+    this.mesh.userData.catPart = 'torso';
     this.mesh.userData.catSkin = this.geometry.userData.catSkin;
+    this.mesh.userData.resolveCatPart = intersection => this.resolvePetPart(intersection);
     this.bones = new Map();
     this.restMatrices = new Map();
     const skeletonBones = [];
@@ -858,6 +1022,16 @@ export class ContinuousCatSkin {
     this.mesh.bind(this.skeleton);
     this.mesh.normalizeSkinWeights();
     this._temporaryMatrix = new THREE.Matrix4();
+    this._sectionMatrix = new THREE.Matrix4();
+    this._sectionLocalMatrix = new THREE.Matrix4();
+    this._sectionQuaternion = new THREE.Quaternion();
+    this._sectionEuler = new THREE.Euler();
+    this._sectionPosition = new THREE.Vector3();
+    this._sectionScale = new THREE.Vector3(1, 1, 1);
+    this._sectionRestInverse = new THREE.Matrix4();
+    this._pelvisLocalDelta = new THREE.Matrix4();
+    this._pelvisRootDelta = new THREE.Matrix4();
+    this._bodyInverse = new THREE.Matrix4();
     this._hiddenLegacy = new Map();
     this._catModel = null;
   }
@@ -888,6 +1062,19 @@ export class ContinuousCatSkin {
     this.skeleton.update();
   }
 
+  resolvePetPart(intersection) {
+    const region = this.geometry.getAttribute('aCatRegion');
+    const face = intersection?.face;
+    if (!region || !face) return 'torso';
+    const values = [region.getX(face.a), region.getX(face.b), region.getX(face.c)].map(Math.round);
+    const selected = values[0] === values[1] || values[0] === values[2]
+      ? values[0]
+      : values[1] === values[2]
+        ? values[1]
+        : values[0];
+    return CAT_SKIN_PART_BY_REGION[selected] ?? 'torso';
+  }
+
   /**
    * Copies the live CatModel pose after CatModel.update().  No geometry is
    * rebuilt: this path is matrix-only and is safe to call every animation frame.
@@ -897,8 +1084,52 @@ export class ContinuousCatSkin {
     catModel.body.updateMatrix?.();
     const bodyMatrix = catModel.body.matrix;
     copyObjectMatrix(this.bones.get('torso'), catModel.body);
+
+    const motion=catModel.lastMotion ?? {};
+    const bodyScale=Math.max(0.001,catModel.root?.scale?.x ?? 1);
+    const bodyHeight=Number(motion.bodyHeight);
+    const pelvisHeight=Number(motion.pelvisHeight);
+    const shoulderHeight=Number(motion.shoulderHeight);
+    const pelvisOffset=Number.isFinite(pelvisHeight)&&Number.isFinite(bodyHeight)
+      ? clamp((pelvisHeight-bodyHeight)/bodyScale,-0.032,0.032)
+      : 0;
+    const thoraxOffset=Number.isFinite(shoulderHeight)&&Number.isFinite(bodyHeight)
+      ? clamp((shoulderHeight-bodyHeight)/bodyScale,-0.032,0.032)
+      : 0;
+    const bend=clamp(Number(motion.spineBend)||0,-0.32,0.32);
+    const speed=Math.max(0,Number(motion.speed)||0);
+    const phase=Number(motion.gaitPhase)||0;
+    const move=smoothstep(0.05,0.9,speed);
+    const walkWindow=smoothstep(0.08,0.8,speed)*(1-smoothstep(1.5,2.2,speed));
+    const walkWave=Math.sin(phase*TAU)*walkWindow*0.028;
+    const flex=clamp((Number(motion.spineFlex)||0)+walkWave,-0.16,0.16);
+    const counter=Math.cos(phase*TAU)*move;
+    const sectionPose={
+      pelvis:{ y:pelvisOffset-counter*0.0035, z:Math.abs(flex)*0.010, pitch:-flex*0.50, yaw:-bend*0.42, roll:walkWave*0.012 },
+      lumbar:{ y:mix(pelvisOffset,thoraxOffset,0.46)+Math.abs(flex)*0.012, z:0, pitch:flex*1.35, yaw:bend*0.78, roll:0 },
+      thorax:{ y:thoraxOffset+counter*0.0025, z:-Math.abs(flex)*0.006, pitch:flex*0.36, yaw:bend*0.20, roll:-walkWave*0.010 },
+    };
+    for(const section of TORSO_SECTION_BONES) {
+      const pose=sectionPose[section.name];
+      this._sectionPosition.set(0,pose.y,section.centerZ+pose.z);
+      this._sectionEuler.set(pose.pitch,pose.yaw,pose.roll,'XYZ');
+      this._sectionQuaternion.setFromEuler(this._sectionEuler);
+      if(section.name==='lumbar') this._sectionScale.set(1,1+Math.abs(flex)*0.10,1-Math.abs(flex)*0.04);
+      else this._sectionScale.set(1,1,1);
+      this._sectionLocalMatrix.compose(this._sectionPosition,this._sectionQuaternion,this._sectionScale);
+      this._sectionMatrix.multiplyMatrices(bodyMatrix,this._sectionLocalMatrix);
+      this.setBoneMatrix(section.name,this._sectionMatrix);
+      if(section.name==='pelvis') {
+        this._sectionRestInverse.copy(this.restMatrices.get('pelvis')).invert();
+        this._pelvisLocalDelta.multiplyMatrices(this._sectionLocalMatrix,this._sectionRestInverse);
+      }
+    }
+    this._bodyInverse.copy(bodyMatrix).invert();
+    this._pelvisRootDelta.copy(bodyMatrix).multiply(this._pelvisLocalDelta).multiply(this._bodyInverse);
     copyObjectMatrix(this.bones.get('neck'), catModel.anatomy?.neck?.group, bodyMatrix, this._temporaryMatrix);
     copyObjectMatrix(this.bones.get('head'), catModel.headRig, bodyMatrix, this._temporaryMatrix);
+    copyObjectMatrix(this.bones.get('frontLeft.scapula'),catModel.anatomy?.scapulaLeft?.group,bodyMatrix,this._temporaryMatrix);
+    copyObjectMatrix(this.bones.get('frontRight.scapula'),catModel.anatomy?.scapulaRight?.group,bodyMatrix,this._temporaryMatrix);
 
     const limbMap = {
       frontLeft: 'frontLeft',
@@ -915,7 +1146,7 @@ export class ContinuousCatSkin {
       copyObjectMatrix(this.bones.get(`${targetPrefix}.paw`), limb.paw?.group);
     }
     for (let index = 0; index < TAIL_LANDMARKS.length; index += 1) {
-      copyObjectMatrix(this.bones.get(`tail.${index}`), catModel.tail?.[index]?.part?.group);
+      copyObjectMatrix(this.bones.get(`tail.${index}`), catModel.tail?.[index]?.part?.group,this._pelvisRootDelta,this._temporaryMatrix);
     }
     this.mesh.updateMatrixWorld(true);
     this.skeleton.update();
@@ -931,25 +1162,42 @@ export class ContinuousCatSkin {
     if (!catModel?.root) throw new TypeError('attachToCatModel requires a CatModel instance');
     if (this._catModel && this._catModel !== catModel) this.detachFromCatModel();
     this._catModel = catModel;
+    catModel.continuousSkin = this;
     catModel.root.add(this.mesh);
-    if (hideLegacySkin) {
-      const retained = /pinna|eyelid/i;
-      for (const part of catModel.partRecords ?? []) {
-        if (retained.test(part.name ?? '')) continue;
-        for (const object of [part.base, ...(part.shellMeshes ?? [])]) {
-          if (!object || this._hiddenLegacy.has(object)) continue;
-          this._hiddenLegacy.set(object, object.visible);
-          object.visible = false;
-        }
-      }
-      if (catModel.guardHairs && !this._hiddenLegacy.has(catModel.guardHairs)) {
-        this._hiddenLegacy.set(catModel.guardHairs, catModel.guardHairs.visible);
-        catModel.guardHairs.visible = false;
-      }
-    }
+    if (hideLegacySkin) this.setLegacySkinHidden(true, catModel);
     if (registerPettable && Array.isArray(catModel.pettable) && !catModel.pettable.includes(this.mesh)) catModel.pettable.push(this.mesh);
     this.updateFromCatModel(catModel);
     return this;
+  }
+
+  /** Reapply after a CatModel diagnostic/fur toggle, which may change visibility. */
+  setLegacySkinHidden(hidden = true, catModel = this._catModel) {
+    if (!catModel) return false;
+    if (!hidden) {
+      for (const [object, visible] of this._hiddenLegacy) object.visible = visible;
+      this._hiddenLegacy.clear();
+      return true;
+    }
+    const retained = /pinna|eyelid|orbital/i;
+    for (const part of catModel.partRecords ?? []) {
+      if (retained.test(part.name ?? '')) continue;
+      for (const object of [part.base, ...(part.shellMeshes ?? [])]) {
+        if (!object) continue;
+        if (!this._hiddenLegacy.has(object)) this._hiddenLegacy.set(object, object.visible);
+        object.visible = false;
+      }
+    }
+    if (catModel.guardHairs) {
+      if (!this._hiddenLegacy.has(catModel.guardHairs)) this._hiddenLegacy.set(catModel.guardHairs, catModel.guardHairs.visible);
+      catModel.guardHairs.visible = false;
+    }
+    for(const limb of Object.values(catModel.limbs ?? {})) {
+      const pads=limb.paw?.pads;
+      if(!pads) continue;
+      if(!this._hiddenLegacy.has(pads)) this._hiddenLegacy.set(pads,pads.visible);
+      pads.visible=false;
+    }
+    return true;
   }
 
   detachFromCatModel() {
@@ -958,9 +1206,9 @@ export class ContinuousCatSkin {
       const index = catModel.pettable.indexOf(this.mesh);
       if (index >= 0) catModel.pettable.splice(index, 1);
     }
-    for (const [object, visible] of this._hiddenLegacy) object.visible = visible;
-    this._hiddenLegacy.clear();
+    this.setLegacySkinHidden(false, catModel);
     this.mesh.removeFromParent();
+    if (catModel?.continuousSkin === this) delete catModel.continuousSkin;
     this._catModel = null;
   }
 

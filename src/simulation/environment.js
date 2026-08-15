@@ -227,18 +227,22 @@ export function createEnvironment(scene) {
   }
 
   function registerObstacle(id, object, room, type='furniture', options={}) {
-    object.updateWorldMatrix(true, true);
-    const bounds = new THREE.Box3().setFromObject(object);
+    const colliderObject=options.colliderObject?.isObject3D?options.colliderObject:null;
+    (colliderObject??object).updateWorldMatrix(true, true);
+    const bounds = new THREE.Box3().setFromObject(colliderObject??object);
     const entry = {
       id,
       type,
       room,
       object,
+      colliderObject,
       min: bounds.min.clone(),
       max: bounds.max.clone(),
       enabled: options.enabled !== false,
       dynamic: Boolean(options.dynamic),
       permeability: options.permeability ?? 0,
+      navigationPassable: Boolean(options.navigationPassable),
+      walkableTop: Boolean(options.walkableTop),
       tags: options.tags ? [...options.tags] : [],
     };
     object.userData.obstacleId = id;
@@ -478,7 +482,11 @@ export function createEnvironment(scene) {
     if (axis === 'z') pivot.rotation.y = Math.PI/2;
     const closedRotation = pivot.rotation.y;
     pivot.updateWorldMatrix(true, true);
-    const obstacle = registerObstacle(`${id}-obstacle`, pivot, room, 'door', {dynamic:true, tags:['door']});
+    const obstacle = registerObstacle(`${id}-obstacle`, pivot, room, 'door', {
+      dynamic:true, tags:['door'], colliderObject:panel,
+    });
+    obstacle.hinge=pivot.getWorldPosition(new THREE.Vector3());
+    obstacle.angularVelocityY=0;
     const state = { id, label, room, pivot, panel, knob, obstacle, open:false, amount:0, target:0, closedRotation, direction };
     doors.set(id, state);
     const interactable = addInteractable(id, 'door', label, pivot, room, new THREE.Vector3(...hinge), () => toggleDoor(id), {open:false, radius:1.05});
@@ -721,6 +729,11 @@ export function createEnvironment(scene) {
     const outer=new THREE.Mesh(new THREE.CylinderGeometry(.25,.19,.105,28,1,true),bowlMat); outer.position.y=.06; outer.castShadow=true; group.add(outer);
     const rim=new THREE.Mesh(new THREE.TorusGeometry(.25,.025,7,28),bowlMat); rim.rotation.x=Math.PI/2; rim.position.y=.112; group.add(rim);
     const fill=new THREE.Mesh(new THREE.CircleGeometry(.21,28),kind==='water'?palette.water:palette.food); fill.rotation.x=-Math.PI/2; fill.position.y=.108; group.add(fill);
+    group.updateWorldMatrix(true,true);
+    // Toys collide with the ceramic, while feline navigation targets the bowl
+    // center so the head/neck reach (rather than a torso-sized disc) controls
+    // the final feeding distance.
+    registerObstacle(`${kind}-bowl-obstacle`,group,room,'bowl',{navigationPassable:true});
     const state={kind,fullness:kind==='water'?.82:.72,fill,baseY:.108,lastRefill:0};
     resources[kind]=state;
     addInterest(`${kind}-bowl-interest`,kind,kind==='water'?'Fresh water bowl':'Food bowl',[position[0],.13,position[2]],room,{radius:.65,utility:.95,object:group,state,tags:[kind,'resource']});
@@ -855,15 +868,20 @@ export function createEnvironment(scene) {
   function addLitterBox() {
     const group=new THREE.Group(); group.name='litter-box'; group.position.set(4.72,.02,6.15); root.add(group);
     const bottom=boxMesh('litter-bottom',[0,.07,0],[1.35,.14,1.04],palette.tileDark,group,true,true);
+    const walls=[];
     for(const [id,p,s] of [
       ['back',[0,.22,-.49],[1.35,.42,.08]], ['left',[-.635,.18,0],[.08,.34,1.04]],
       ['right',[.635,.18,0],[.08,.34,1.04]], ['front-left',[-.47,.14,.49],[.4,.25,.08]],
       ['front-right',[.47,.14,.49],[.4,.25,.08]],
-    ]) boxMesh(`litter-wall-${id}`,p,s,palette.tileDark,group,true,true);
+    ]) walls.push([id,boxMesh(`litter-wall-${id}`,p,s,palette.tileDark,group,true,true)]);
     const fill=boxMesh('litter-fill',[0,.155,0],[1.16,.09,.86],palette.litter,group,false,true);
     const clumps=[];
     for(const [x,z,s] of [[-.3,-.1,.11],[.28,.19,.08],[.05,-.27,.07]]) clumps.push(sphereMesh(`litter-clump-${x}-${z}`,[x,.23,z],s,palette.soil,[1.2,.35,1],group,10));
-    group.updateWorldMatrix(true,true); registerObstacle('litter-box-obstacle',bottom,'bathroom','litter-tray');
+    group.updateWorldMatrix(true,true);
+    registerObstacle('litter-box-bottom-obstacle',bottom,'bathroom','litter-tray',{walkableTop:true});
+    for(const [id,wall] of walls) registerObstacle(`litter-box-${id}-obstacle`,wall,'bathroom','litter-wall');
+    addSurface({id:'litter-box-lip-surface',room:'bathroom',type:'litter-tray',minX:4.045,maxX:5.395,minZ:5.63,maxZ:6.67,y:.16,object:bottom,friction:.78,tags:['step','resource']});
+    addSurface({id:'litter-fill-surface',room:'bathroom',type:'litter',minX:4.14,maxX:5.30,minZ:5.72,maxZ:6.58,y:.22,object:fill,softness:.35,friction:.82,priority:2,tags:['resource','diggable']});
     const state={cleanliness:.76,clumps,fill,lastClean:0}; resources.litter=state;
     addInterest('litter-interest','litter','Private litter tray',[4.72,.22,6.15],'bathroom',{radius:.86,utility:.98,object:group,state,tags:['resource','private','diggable']});
     addInteractable('litter-box','litter','Litter tray',group,'bathroom',[4.72,.02,6.15],cleanLitter,{radius:1,cleanliness:state.cleanliness});
@@ -1180,11 +1198,14 @@ export function createEnvironment(scene) {
   function update(dt, time=performanceNow()) {
     const safeDt=Math.min(Math.max(dt||0,0),.1);
     for(const door of doors.values()) {
+      const previousRotation=door.pivot.rotation.y;
       door.amount += (door.target-door.amount)*(1-Math.exp(-9*safeDt));
       const eased=door.amount*door.amount*(3-2*door.amount);
       door.pivot.rotation.y=door.closedRotation+door.direction*eased*Math.PI*.48;
       door.pivot.updateWorldMatrix(true,true);
-      tmpBox.setFromObject(door.pivot);
+      door.obstacle.angularVelocityY=safeDt>0?(door.pivot.rotation.y-previousRotation)/safeDt:0;
+      door.pivot.getWorldPosition(door.obstacle.hinge);
+      tmpBox.setFromObject(door.obstacle.colliderObject??door.pivot);
       door.obstacle.min.copy(tmpBox.min); door.obstacle.max.copy(tmpBox.max);
     }
     if(resources.water) {

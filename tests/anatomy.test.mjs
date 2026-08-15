@@ -14,6 +14,7 @@ import {
   createInnerPinnaGeometry,
   createNoseGeometry,
   createEyelidGeometry,
+  createOrbitalMaskGeometry,
 } from '../src/simulation/cat-anatomy.js';
 import { ProceduralLocomotion } from '../src/simulation/locomotion.js';
 
@@ -156,11 +157,12 @@ test('all smooth anatomy generators produce finite triangle geometry', () => {
     nose: createNoseGeometry(),
     upperEyelid: createEyelidGeometry(.00825, .00575, true),
     lowerEyelid: createEyelidGeometry(.00825, .00575, false),
+    orbitalMask: createOrbitalMaskGeometry(),
   };
 
   try {
     for (const [name, geometry] of Object.entries(geometries)) {
-      assertFiniteGeometry(name, geometry, { planar: name === 'innerPinna' });
+      assertFiniteGeometry(name, geometry, { planar: name === 'innerPinna' || name === 'orbitalMask' });
     }
   } finally {
     for (const geometry of Object.values(geometries)) geometry.dispose();
@@ -187,8 +189,10 @@ test('torso loft preserves measured ribcage, waist, pelvis, and side silhouette'
     const axialStations = [...new Set(Array.from(torso.getAttribute('position').array)
       .filter((_, index) => index % 3 === 2)
       .map(value => Number(value.toFixed(3))))].sort((a, b) => a - b);
-    assert.deepEqual(axialStations, [-.205, -.18, -.14, -.095, -.05, 0, .055, .105, .145, .175]);
-    assert.equal(torso.getAttribute('position').count, 392, 'torso remains one ten-station continuous loft');
+    for (const station of [-.205, -.18, -.14, -.095, -.05, 0, .055, .105, .145, .175]) {
+      assert.ok(axialStations.includes(station), `resampled torso retains measured station ${station}`);
+    }
+    assert.ok(torso.getAttribute('position').count >= 1400, 'torso uses enough axial samples for a smooth side silhouette');
   } finally {
     torso.dispose();
   }
@@ -212,8 +216,8 @@ test('cranial, paw, and three-dimensional pinna envelopes stay anatomically scal
 
     const pinnaSize = geometrySize(pinna);
     assert.ok(pinnaSize.x >= .041 && pinnaSize.x <= .044, `pinna width ${pinnaSize.x}`);
-    assert.ok(pinnaSize.y >= .062 && pinnaSize.y <= .064, `pinna height ${pinnaSize.y}`);
-    assert.ok(pinnaSize.z >= .018 && pinnaSize.z <= .021, `pinna depth ${pinnaSize.z}`);
+    assert.ok(pinnaSize.y >= .057 && pinnaSize.y <= .059, `pinna height ${pinnaSize.y}`);
+    assert.ok(pinnaSize.z >= .013 && pinnaSize.z <= .0155, `pinna depth ${pinnaSize.z}`);
     assert.ok(pinna.getAttribute('position').count >= 5000, 'pinna retains curved rim and inner cavity topology');
 
     const noseSize = geometrySize(nose);
@@ -301,6 +305,37 @@ test('neutral locomotion is a stable metric stance with four planted finite paws
     assert.equal(foot.swing, 0);
     assertClose(foot.position.y, 0, 1e-12, 'settled paw ground contact');
   }
+});
+
+test('the trunk pitches nose-up on +Z uphill terrain', () => {
+  const grade = .12;
+  const environment = {
+    obstacles: [],
+    sampleSurface(x, z) {
+      const px = x?.isVector3 ? x.x : x;
+      const pz = x?.isVector3 ? x.z : z;
+      const height = pz * grade;
+      return {
+        height,
+        position: new THREE.Vector3(px, height, pz),
+        normal: new THREE.Vector3(0, 1, -grade).normalize(),
+        walkable: true,
+        width: Infinity,
+      };
+    },
+    isBlocked() { return false; },
+  };
+  const locomotion = new ProceduralLocomotion(environment, {
+    position: new THREE.Vector3(),
+    heading: 0,
+    bodyScale: 1,
+  });
+
+  let state;
+  for (let frame = 0; frame < 360; frame++) state = locomotion.update(1 / 120);
+  assertFiniteMotion(state, 'uphill');
+  assert.ok(state.bodyPitch < -.05, `+Z uphill pitch must be negative, received ${state.bodyPitch}`);
+  assert.ok(state.bodyPitch > -.20, `uphill pitch remains anatomically bounded, received ${state.bodyPitch}`);
 });
 
 test('a neutral flat-ground walk remains finite and produces bounded paw clearance', () => {

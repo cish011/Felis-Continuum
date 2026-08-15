@@ -6,6 +6,22 @@ function signedPow(value, exponent) {
   return Math.sign(value) * Math.pow(Math.abs(value), exponent);
 }
 
+function averageRingSeamNormals(geometry,ringCount,ringStride) {
+  const normal=geometry.getAttribute('normal');
+  const blended=new THREE.Vector3();
+  for(let ring=0;ring<ringCount;ring++) {
+    const first=ring*ringStride,last=first+ringStride-1;
+    blended.set(
+      normal.getX(first)+normal.getX(last),
+      normal.getY(first)+normal.getY(last),
+      normal.getZ(first)+normal.getZ(last),
+    ).normalize();
+    normal.setXYZ(first,blended.x,blended.y,blended.z);
+    normal.setXYZ(last,blended.x,blended.y,blended.z);
+  }
+  normal.needsUpdate=true;
+}
+
 /**
  * Closed longitudinal skin assembled from measured elliptical cross-sections.
  * Rings run caudal-to-cranial on +Z.  Unlike overlapped spheres, the result has
@@ -82,6 +98,7 @@ export function createAnatomicalLoft(rings,radialSegments=32,longitudinalSubdivi
   geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
+  averageRingSeamNormals(geometry,rings.length,ringStride);
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
   return geometry;
@@ -166,6 +183,7 @@ export function createTaperedLimbGeometry(length,startRadius,endRadius,{depth=.9
   geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
+  averageRingSeamNormals(geometry,segments+1,stride);
   geometry.computeBoundingSphere();
   return geometry;
 }
@@ -216,6 +234,17 @@ export function createPinnaGeometry() {
     const height=Math.max(0,Math.min(1,position.getY(index)/.058));
     position.setZ(index,position.getZ(index)*(1-height*.82));
   }
+  // Bring the bevel-inclusive envelope back to the measured 42 x 58 x
+  // approximately 14 mm pinna, then bow the cartilage rearward through its
+  // height. The changing centreline is what removes the side-view slab.
+  geometry.scale(.992,.922,.68);
+  geometry.computeBoundingBox();
+  const minY=geometry.boundingBox.min.y,maxY=geometry.boundingBox.max.y;
+  for(let index=0;index<position.count;index++) {
+    const height=Math.max(0,Math.min(1,(position.getY(index)-minY)/(maxY-minY)));
+    const bow=.0027*Math.sin(height*Math.PI)-.0012*height;
+    position.setZ(index,position.getZ(index)+bow);
+  }
   position.needsUpdate=true;
   geometry.computeVertexNormals();
   return geometry;
@@ -230,6 +259,17 @@ export function createInnerPinnaGeometry() {
   shape.quadraticCurveTo(.017,.015,.013,.006);
   shape.quadraticCurveTo(.001,.002,-.012,.006);
   const geometry=new THREE.ShapeGeometry(shape,18);
+  const position=geometry.getAttribute('position');
+  for(let index=0;index<position.count;index++) {
+    const x=position.getX(index),y=position.getY(index);
+    const height=THREE.MathUtils.clamp((y-.003)/.046,0,1);
+    const halfWidth=THREE.MathUtils.lerp(.013,.0035,height);
+    const lateral=THREE.MathUtils.clamp(x/halfWidth,-1,1);
+    // Recess the centre into a shallow conchal bowl while the perimeter meets
+    // the raised rim. A flat pink plate falsely sealed the cavity.
+    position.setZ(index,-.0045*(1-lateral*lateral)*Math.sin(height*Math.PI));
+  }
+  position.needsUpdate=true;
   geometry.computeVertexNormals();
   return geometry;
 }
@@ -262,4 +302,27 @@ export function createEyelidGeometry(width,height,upper=true) {
   // The lid margin is a fine fold around a buried globe. A thick tube reads
   // as a cartoon spectacle frame and falsely enlarges the eye aperture.
   return new THREE.TubeGeometry(curve,28,.00115,6,false);
+}
+
+/** Skin-colored orbital plate with a true almond aperture for a buried globe. */
+export function createOrbitalMaskGeometry(
+  apertureWidth=.0165,
+  apertureHeight=.0115,
+  outerWidth=.026,
+  outerHeight=.022,
+) {
+  const shape=new THREE.Shape();
+  shape.moveTo(-outerWidth*.5,0);
+  shape.bezierCurveTo(-outerWidth*.45,outerHeight*.44,outerWidth*.28,outerHeight*.54,outerWidth*.5,0);
+  shape.bezierCurveTo(outerWidth*.32,-outerHeight*.54,-outerWidth*.35,-outerHeight*.48,-outerWidth*.5,0);
+
+  const aperture=new THREE.Path();
+  aperture.moveTo(-apertureWidth*.5,0);
+  aperture.quadraticCurveTo(-apertureWidth*.12,apertureHeight*.62,apertureWidth*.5,0);
+  aperture.quadraticCurveTo(apertureWidth*.08,-apertureHeight*.58,-apertureWidth*.5,0);
+  shape.holes.push(aperture);
+
+  const geometry=new THREE.ShapeGeometry(shape,24);
+  geometry.computeVertexNormals();
+  return geometry;
 }

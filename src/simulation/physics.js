@@ -33,10 +33,11 @@ export class ToyPhysics {
     this.scene?.add?.(this.root);
     this.toys = [];
     this.bodies = this.toys;
-    this.gravity = options.gravity ?? -9.81;
-    this.bounds = { ...DEFAULT_BOUNDS, ...(options.bounds || {}) };
-    this.fixedStep = options.fixedStep || 1/120;
-    this.maxSubsteps = options.maxSubsteps || 8;
+    this.gravity = finiteNumber(options.gravity, -9.81);
+    this.bounds = { ...DEFAULT_BOUNDS };
+    this.setBounds(options.bounds);
+    this.fixedStep = clamp(finiteNumber(options.fixedStep, 1/120), 1/1000, 1/20);
+    this.maxSubsteps = Math.round(clamp(finiteNumber(options.maxSubsteps, 8), 1, 32));
     this.time = 0;
     this.backend = 'three-deterministic';
     this.backendError = null;
@@ -54,6 +55,14 @@ export class ToyPhysics {
       axis:new THREE.Vector3(),
       quaternion:new THREE.Quaternion(),
       euler:new THREE.Euler(),
+      matrix:new THREE.Matrix4(),
+      localPoint:new THREE.Vector3(),
+      localClosest:new THREE.Vector3(),
+      scale:new THREE.Vector3(),
+      delta:new THREE.Vector3(),
+      relative:new THREE.Vector3(),
+      surfaceVelocity:new THREE.Vector3(),
+      contact:new THREE.Vector3(),
     };
   }
 
@@ -91,13 +100,18 @@ export class ToyPhysics {
   }
 
   setBounds(bounds) {
-    Object.assign(this.bounds, bounds || {});
+    for(const key of Object.keys(DEFAULT_BOUNDS)) {
+      if(Number.isFinite(bounds?.[key])) this.bounds[key]=bounds[key];
+    }
+    if(this.bounds.minX>=this.bounds.maxX) [this.bounds.minX,this.bounds.maxX]=[this.bounds.maxX,this.bounds.minX];
+    if(this.bounds.minY>=this.bounds.maxY) [this.bounds.minY,this.bounds.maxY]=[this.bounds.maxY,this.bounds.minY];
+    if(this.bounds.minZ>=this.bounds.maxZ) [this.bounds.minZ,this.bounds.maxZ]=[this.bounds.maxZ,this.bounds.minZ];
     return this;
   }
 
   createBall(position=new THREE.Vector3(-5.9,.2,-3.5), options={}) {
     ({position, options} = normalizeCreateArguments(position, options, [-5.9,.2,-3.5]));
-    const radius = options.radius ?? .074;
+    const radius = clamp(positiveFinite(options.radius,.074),.008,.5);
     const group = new THREE.Group();
     const color = options.color ?? BALL_COLORS[(this._nextId-1) % BALL_COLORS.length];
     const shellMaterial = standardMaterial(color, .54, .02);
@@ -159,7 +173,7 @@ export class ToyPhysics {
       whisker.name=`mouse-whisker-${side}-${i}`; group.add(whisker);
     }
     const body = this._makeBody('mouse', group, position, {
-      radius:options.radius ?? .112,
+      radius:clamp(positiveFinite(options.radius,.112),.02,.5),
       mass:options.mass ?? .027,
       restitution:options.restitution ?? .28,
       friction:options.friction ?? .72,
@@ -191,7 +205,7 @@ export class ToyPhysics {
     const thread=new THREE.Mesh(new THREE.CylinderGeometry(.004,.004,.46,6),standardMaterial(0x3a3732,.75,0));
     thread.name='feather-string'; thread.position.y=-.4; group.add(thread);
     const body = this._makeBody('feather', group, position, {
-      radius:options.radius ?? .09,
+      radius:clamp(positiveFinite(options.radius,.09),.015,.5),
       mass:options.mass ?? .0045,
       restitution:options.restitution ?? .12,
       friction:options.friction ?? .48,
@@ -231,6 +245,8 @@ export class ToyPhysics {
     const interaction = {type:'toy',label:`Pick up ${options.label}`,action:'pickup-toy'};
     object.userData.interaction = interaction;
     object.traverse(child=>{ if(child.isMesh || child.isLine) child.userData.interaction={...interaction,toyId:id,toyType:type}; });
+    const radius=positiveFinite(options.radius,.06);
+    const mass=positiveFinite(options.mass,.03);
     const body = {
       id,
       type,
@@ -240,15 +256,15 @@ export class ToyPhysics {
       position:object.position,
       velocity:new THREE.Vector3(),
       angularVelocity:new THREE.Vector3(),
-      radius:options.radius,
-      mass:options.mass,
-      invMass:1/options.mass,
-      restitution:options.restitution,
-      friction:options.friction,
-      linearDrag:options.linearDrag,
-      angularDrag:options.angularDrag,
-      gravityScale:options.gravityScale,
-      phase:options.phase ?? ((this._nextId*2.399963229728653)%6.283185307179586),
+      radius,
+      mass,
+      invMass:1/mass,
+      restitution:clamp(finiteNumber(options.restitution,.3),0,1),
+      friction:clamp(finiteNumber(options.friction,.6),0,2),
+      linearDrag:Math.max(0,finiteNumber(options.linearDrag,.1)),
+      angularDrag:Math.max(0,finiteNumber(options.angularDrag,.2)),
+      gravityScale:clamp(finiteNumber(options.gravityScale,1),0,4),
+      phase:finiteNumber(options.phase,(this._nextId*2.399963229728653)%6.283185307179586),
       sleeping:false,
       sleepTimer:0,
       held:false,
@@ -288,7 +304,7 @@ export class ToyPhysics {
     } else velocity=toVector(originOrVelocity);
     if(origin) body.position.copy(origin);
     body.velocity.copy(velocity).clampLength(0,18);
-    if(spin) body.angularVelocity.copy(spin);
+    if(spin) body.angularVelocity.copy(spin).clampLength(0,80);
     else {
       body.angularVelocity.set(
         (Math.sin(body.phase*7.1)*.5+.5)*8,
@@ -298,6 +314,9 @@ export class ToyPhysics {
     }
     body.sleeping=false; body.sleepTimer=0; body.held=false; body.grounded=false;
     if(body.rapierBody) {
+      // `hold` changes the Rapier body to kinematic. A throw must restore the
+      // dynamic type before setting velocity or Rapier will ignore the launch.
+      body.rapierBody.setBodyType(this._rapier.RigidBodyType.Dynamic,true);
       body.rapierBody.setTranslation(vectorObject(body.position),true);
       body.rapierBody.setLinvel(vectorObject(body.velocity),true);
       body.rapierBody.setAngvel(vectorObject(body.angularVelocity),true);
@@ -307,13 +326,13 @@ export class ToyPhysics {
   }
 
   /** Apply a paw-sized impulse. A numeric third argument scales a direction. */
-  batImpulse(target, impulse=new THREE.Vector3(1.1,.45,0), contactPoint=null) {
+  batImpulse(target, impulse=new THREE.Vector3(.038,.014,0), contactPoint=null) {
     const body=this._resolveBody(target);
-    if(!body) return false;
+    if(!body||body.held) return false;
     let applied=toVector(impulse);
     if(typeof contactPoint==='number') applied=applied.normalize().multiplyScalar(contactPoint);
-    applied.clampLength(0,1.6);
-    body.velocity.addScaledVector(applied,body.invMass);
+    applied.clampLength(0,.18);
+    body.velocity.addScaledVector(applied,body.invMass).clampLength(0,18);
     if(contactPoint && typeof contactPoint!=='number') {
       const lever=toVector(contactPoint).sub(body.position);
       const torque=lever.cross(applied).multiplyScalar(2.5/Math.max(body.mass,.005));
@@ -324,12 +343,10 @@ export class ToyPhysics {
     }
     body.sleeping=false; body.sleepTimer=0;
     if(body.rapierBody) {
-      body.rapierBody.applyImpulse(vectorObject(applied),true);
-      if(contactPoint && typeof contactPoint!=='number') {
-        const lever=toVector(contactPoint).sub(body.position);
-        const torque=lever.cross(applied).multiplyScalar(2.5);
-        body.rapierBody.applyTorqueImpulse(vectorObject(torque),true);
-      }
+      // Synchronize the result computed from the authored toy mass so both
+      // backends produce the same paw strike rather than applying it twice.
+      body.rapierBody.setLinvel(vectorObject(body.velocity),true);
+      body.rapierBody.setAngvel(vectorObject(body.angularVelocity),true);
       body.rapierBody.wakeUp();
     }
     return true;
@@ -338,10 +355,11 @@ export class ToyPhysics {
   hold(target, position) {
     const body=this._resolveBody(target);
     if(!body) return false;
+    const wasHeld=body.held;
     body.held=true; body.sleeping=false; body.velocity.set(0,0,0); body.angularVelocity.set(0,0,0);
     if(position) body.position.copy(toVector(position));
     if(body.rapierBody) {
-      body.rapierBody.setBodyType(this._rapier.RigidBodyType.KinematicPositionBased,true);
+      if(!wasHeld) body.rapierBody.setBodyType(this._rapier.RigidBodyType.KinematicPositionBased,true);
       body.rapierBody.setNextKinematicTranslation(vectorObject(body.position));
     }
     return true;
@@ -350,10 +368,13 @@ export class ToyPhysics {
   release(target, velocity=new THREE.Vector3()) {
     const body=this._resolveBody(target);
     if(!body) return false;
-    body.held=false; body.velocity.copy(toVector(velocity)); body.sleeping=false;
+    body.held=false; body.velocity.copy(toVector(velocity)).clampLength(0,18); body.sleeping=false; body.sleepTimer=0;
     if(body.rapierBody) {
       body.rapierBody.setBodyType(this._rapier.RigidBodyType.Dynamic,true);
+      body.rapierBody.setTranslation(vectorObject(body.position),true);
       body.rapierBody.setLinvel(vectorObject(body.velocity),true);
+      body.rapierBody.setAngvel(vectorObject(body.angularVelocity),true);
+      body.rapierBody.wakeUp();
     }
     return true;
   }
@@ -373,12 +394,16 @@ export class ToyPhysics {
     for(let step=0;step<steps;step++) {
       for(const body of this.toys) {
         if(body.held) continue;
-        if(body.sleeping) {
-          // Sleeping objects still follow moving surfaces/doors if displaced.
-          body.grounded=this._resolveGround(body,h,false);
-          continue;
-        }
         body.age+=h; body.grounded=false; body.collisions=0;
+        if(body.sleeping) {
+          // Moving doors can displace sleeping toys, and a toy whose support
+          // vanished must wake so gravity resumes.
+          const hitDynamic=this._resolveObstacles(body,h,true);
+          body.grounded=this._resolveGround(body,h,false);
+          if(!hitDynamic&&body.grounded) continue;
+          body.sleeping=false;
+          body.sleepTimer=0;
+        }
         this._applyForces(body,h);
         body.position.addScaledVector(body.velocity,h);
         this._integrateOrientation(body,h);
@@ -387,6 +412,7 @@ export class ToyPhysics {
         this._resolveGround(body,h,true);
         this._updateSleep(body,h);
       }
+      this._resolveToyPairs();
     }
   }
 
@@ -428,17 +454,78 @@ export class ToyPhysics {
 
   _resolveObstacles(body,h,onlyDynamic=false) {
     const obstacles=this.environment?.obstacles || [];
+    let collided=false;
     for(const obstacle of obstacles) {
       if(!obstacle || obstacle.enabled===false || obstacle.permeability>=1) continue;
       if(onlyDynamic && !obstacle.dynamic) continue;
       if(!onlyDynamic && obstacle.type==='ramp') continue;
-      if(obstacle.min?.isVector3 && obstacle.max?.isVector3) this._sphereAabb(body,obstacle.min,obstacle.max,h,obstacle);
+      if(obstacle.colliderObject?.isObject3D) collided=this._sphereObjectCollider(body,obstacle.colliderObject,h,obstacle)||collided;
+      else if(obstacle.min?.isVector3 && obstacle.max?.isVector3) collided=this._sphereAabb(body,obstacle.min,obstacle.max,h,obstacle)||collided;
       else if(Number.isFinite(obstacle.minX)) {
         const min=this._tmp.point.set(obstacle.minX,obstacle.minY??0,obstacle.minZ);
         const max=this._tmp.axis.set(obstacle.maxX,obstacle.maxY??3,obstacle.maxZ);
-        this._sphereAabb(body,min,max,h,obstacle);
+        collided=this._sphereAabb(body,min,max,h,obstacle)||collided;
       }
     }
+    return collided;
+  }
+
+  _sphereObjectCollider(body,object,h,obstacle) {
+    const geometry=object.geometry;
+    if(!geometry) return false;
+    if(!geometry.boundingBox) geometry.computeBoundingBox?.();
+    const box=geometry.boundingBox;
+    if(!box||box.isEmpty()) return false;
+    object.updateWorldMatrix?.(true,false);
+    const inverse=this._tmp.matrix.copy(object.matrixWorld).invert();
+    const localPoint=this._tmp.localPoint.copy(body.position).applyMatrix4(inverse);
+    const scale=this._tmp.scale.setFromMatrixScale(object.matrixWorld);
+    const minScale=Math.max(1e-5,Math.min(Math.abs(scale.x),Math.abs(scale.y),Math.abs(scale.z)));
+    const localRadius=body.radius/minScale;
+    const closest=this._tmp.localClosest.set(
+      clamp(localPoint.x,box.min.x,box.max.x),
+      clamp(localPoint.y,box.min.y,box.max.y),
+      clamp(localPoint.z,box.min.z,box.max.z),
+    );
+    const normal=this._tmp.normal.copy(localPoint).sub(closest);
+    const distanceSq=normal.lengthSq();
+    if(distanceSq>localRadius*localRadius) return false;
+    let localPenetration;
+    if(distanceSq>1e-12) {
+      const distance=Math.sqrt(distanceSq);
+      normal.multiplyScalar(1/distance);
+      localPenetration=localRadius-distance;
+    } else {
+      const distances=[
+        localPoint.x-box.min.x,box.max.x-localPoint.x,
+        localPoint.y-box.min.y,box.max.y-localPoint.y,
+        localPoint.z-box.min.z,box.max.z-localPoint.z,
+      ];
+      let face=0;
+      for(let i=1;i<6;i++) if(distances[i]<distances[face]) face=i;
+      normal.set(0,0,0);
+      if(face===0)normal.x=-1; else if(face===1)normal.x=1;
+      else if(face===2)normal.y=-1; else if(face===3)normal.y=1;
+      else if(face===4)normal.z=-1; else normal.z=1;
+      localPenetration=localRadius+Math.max(0,distances[face]);
+    }
+    normal.transformDirection(object.matrixWorld);
+    const contact=this._tmp.contact.copy(closest).applyMatrix4(object.matrixWorld);
+    const surfaceVelocity=this._surfaceVelocityAt(obstacle,contact);
+    this._resolvePlane(body,normal,localPenetration*minScale+1e-5,h,obstacle.id||obstacle.type||'obstacle',undefined,surfaceVelocity);
+    return true;
+  }
+
+  _surfaceVelocityAt(obstacle,contact) {
+    const velocity=this._tmp.surfaceVelocity.set(0,0,0);
+    if(obstacle?.linearVelocity) velocity.add(toVector(obstacle.linearVelocity));
+    if(Number.isFinite(obstacle?.angularVelocityY)&&obstacle?.hinge?.isVector3) {
+      const rx=contact.x-obstacle.hinge.x;
+      const rz=contact.z-obstacle.hinge.z;
+      velocity.x+=obstacle.angularVelocityY*rz;
+      velocity.z-=obstacle.angularVelocityY*rx;
+    }
+    return velocity;
   }
 
   _sphereAabb(body,min,max,h,obstacle) {
@@ -465,7 +552,8 @@ export class ToyPhysics {
       else if(face===4)normal.z=-1; else normal.z=1;
       penetration=r+Math.max(0,distances[face]);
     }
-    this._resolvePlane(body,normal,penetration+1e-5,h,obstacle.id||obstacle.type||'obstacle');
+    const surfaceVelocity=this._surfaceVelocityAt(obstacle,this._tmp.contact.copy(closest));
+    this._resolvePlane(body,normal,penetration+1e-5,h,obstacle.id||obstacle.type||'obstacle',undefined,surfaceVelocity);
     return true;
   }
 
@@ -485,7 +573,13 @@ export class ToyPhysics {
     const groundY=hit.y??hit.height??0;
     const bottom=body.position.y-body.radius;
     if(bottom>groundY+.012) return false;
-    const normal=hit.normal?.isVector3?hit.normal:this._tmp.axis.set(0,1,0);
+    const sourceNormal=hit.normal?.isVector3?hit.normal:THREE.Object3D.DEFAULT_UP;
+    const normal=this._tmp.axis.set(
+      finiteNumber(sourceNormal.x,0),
+      finiteNumber(sourceNormal.y,1),
+      finiteNumber(sourceNormal.z,0),
+    );
+    if(normal.lengthSq()<1e-8) normal.set(0,1,0); else normal.normalize();
     const vertical=Math.max(.12,normal.y);
     const penetration=(groundY-bottom)/vertical;
     if(penetration>=-.002) {
@@ -503,22 +597,72 @@ export class ToyPhysics {
     return false;
   }
 
-  _resolvePlane(body,normal,penetration,h,id,frictionOverride) {
+  _resolvePlane(body,normal,penetration,h,id,frictionOverride,surfaceVelocity=null) {
     body.position.addScaledVector(normal,penetration);
-    const normalSpeed=body.velocity.dot(normal);
+    const surface=surfaceVelocity??this._tmp.surfaceVelocity.set(0,0,0);
+    const relative=this._tmp.relative.copy(body.velocity).sub(surface);
+    const normalSpeed=relative.dot(normal);
     if(normalSpeed<0) {
       const impact=-normalSpeed;
       body.velocity.addScaledVector(normal,-(1+body.restitution)*normalSpeed);
-      const normalComponent=this._tmp.impulse.copy(normal).multiplyScalar(body.velocity.dot(normal));
-      const tangent=this._tmp.tangent.copy(body.velocity).sub(normalComponent);
-      const friction=frictionOverride??body.friction;
+      relative.copy(body.velocity).sub(surface);
+      const normalComponent=this._tmp.impulse.copy(normal).multiplyScalar(relative.dot(normal));
+      const tangent=this._tmp.tangent.copy(relative).sub(normalComponent);
+      const friction=Math.max(0,finiteNumber(frictionOverride,body.friction));
       const reduction=Math.max(0,1-friction*(normal.y>.45?7:3)*h);
-      body.velocity.copy(normalComponent).add(tangent.multiplyScalar(reduction));
+      body.velocity.copy(surface).add(normalComponent).add(tangent.multiplyScalar(reduction));
       body.impact=Math.max(body.impact,impact);
       body.state.lastImpact=impact;
     }
     body.collisions++;
     body.lastCollision=id;
+    if(surface.lengthSq()>1e-8) {
+      body.sleeping=false;
+      body.sleepTimer=0;
+      body.rapierBody?.wakeUp?.();
+    }
+  }
+
+  _resolveToyPairs() {
+    for(let i=0;i<this.toys.length;i++) for(let j=i+1;j<this.toys.length;j++) {
+      const a=this.toys[i],b=this.toys[j];
+      if((a.held&&b.held)||!a.position||!b.position) continue;
+      const delta=this._tmp.delta.copy(b.position).sub(a.position);
+      const radius=a.radius+b.radius;
+      const distanceSq=delta.lengthSq();
+      if(distanceSq>=radius*radius) continue;
+      let distance=Math.sqrt(distanceSq);
+      if(distance<1e-8) {
+        const sign=((a.id.length+b.id.length+i+j)&1)?1:-1;
+        delta.set(sign,0,0);
+        distance=0;
+      } else delta.multiplyScalar(1/distance);
+      const invA=a.held?0:a.invMass;
+      const invB=b.held?0:b.invMass;
+      const inverseMass=invA+invB;
+      if(inverseMass<=0) continue;
+      const penetration=Math.max(0,radius-distance-.0002);
+      const correction=penetration*.88/inverseMass;
+      if(invA) a.position.addScaledVector(delta,-correction*invA);
+      if(invB) b.position.addScaledVector(delta,correction*invB);
+      const relative=this._tmp.relative.copy(b.velocity).sub(a.velocity);
+      const normalSpeed=relative.dot(delta);
+      if(normalSpeed<0) {
+        const restitution=Math.min(a.restitution,b.restitution);
+        const impulse=-(1+restitution)*normalSpeed/inverseMass;
+        if(invA) a.velocity.addScaledVector(delta,-impulse*invA);
+        if(invB) b.velocity.addScaledVector(delta,impulse*invB);
+        const impact=-normalSpeed;
+        a.impact=Math.max(a.impact,impact);
+        b.impact=Math.max(b.impact,impact);
+      }
+      a.collisions++; b.collisions++;
+      a.lastCollision=b.id; b.lastCollision=a.id;
+      if(penetration>.001||normalSpeed<-.02||a.held||b.held) {
+        if(!a.held){a.sleeping=false;a.sleepTimer=0;}
+        if(!b.held){b.sleeping=false;b.sleepTimer=0;}
+      }
+    }
   }
 
   _updateSleep(body,h) {
@@ -559,7 +703,7 @@ export class ToyPhysics {
     if(!this._rapierWorld||!this._rapier||!this.environment) return;
     const R=this._rapier;
     for(const obstacle of this.environment.obstacles||[]) {
-      if(!obstacle?.min?.isVector3||!obstacle?.max?.isVector3||obstacle.dynamic||obstacle.type==='ramp'||obstacle.enabled===false) continue;
+      if(!obstacle?.min?.isVector3||!obstacle?.max?.isVector3||obstacle.dynamic||obstacle.type==='ramp'||obstacle.enabled===false||obstacle.permeability>=1) continue;
       const size=this._tmp.axis.copy(obstacle.max).sub(obstacle.min);
       if(size.x<=0||size.y<=0||size.z<=0) continue;
       const center=this._tmp.point.copy(obstacle.min).add(obstacle.max).multiplyScalar(.5);
@@ -583,7 +727,7 @@ export class ToyPhysics {
   _attachRapierBody(body) {
     if(!this._rapierWorld||body.rapierBody) return;
     const R=this._rapier;
-    const rigidDesc=R.RigidBodyDesc.dynamic()
+    const rigidDesc=(body.held?R.RigidBodyDesc.kinematicPositionBased():R.RigidBodyDesc.dynamic())
       .setTranslation(body.position.x,body.position.y,body.position.z)
       .setLinearDamping(body.linearDrag)
       .setAngularDamping(body.angularDrag)
@@ -717,14 +861,16 @@ function normalizeCreateArguments(position,options,fallback) {
 }
 
 function toVector(value) {
-  if(value?.isVector3) return value.clone();
-  if(Array.isArray(value)) return new THREE.Vector3(value[0]||0,value[1]||0,value[2]||0);
-  if(value&&typeof value==='object') return new THREE.Vector3(value.x||0,value.y||0,value.z||0);
+  if(value?.isVector3) return new THREE.Vector3(finiteNumber(value.x,0),finiteNumber(value.y,0),finiteNumber(value.z,0));
+  if(Array.isArray(value)) return new THREE.Vector3(finiteNumber(value[0],0),finiteNumber(value[1],0),finiteNumber(value[2],0));
+  if(value&&typeof value==='object') return new THREE.Vector3(finiteNumber(value.x,0),finiteNumber(value.y,0),finiteNumber(value.z,0));
   return new THREE.Vector3();
 }
 
 function vectorObject(vector) { return {x:vector.x,y:vector.y,z:vector.z}; }
 function clamp(value,min,max){return Math.max(min,Math.min(max,value));}
+function finiteNumber(value,fallback){return Number.isFinite(value)?value:fallback;}
+function positiveFinite(value,fallback){return Math.max(1e-5,finiteNumber(value,fallback));}
 
 function serializeBody(body) {
   return {

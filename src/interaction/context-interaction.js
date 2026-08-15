@@ -7,13 +7,27 @@ const PART_LABELS = {
   tail: 'tail', paw: 'paw', frontLeg: 'front leg', hindLeg: 'hind leg', ear: 'ear',
 };
 
-function interactionData(object) {
+function isWithinObject(object,root) {
+  for(let current=object;current;current=current.parent) if(current===root)return true;
+  return false;
+}
+
+function interactionReach(data) {
+  if(Number.isFinite(data?.maxDistance))return Math.max(.1,data.maxDistance);
+  if(data?.type==='cat')return 2.2;
+  if(data?.type==='toy')return 2.35;
+  return 2.75;
+}
+
+function interactionData(object,hit=null) {
   let current = object;
   while (current) {
     if (current.userData?.catPart) {
+      const resolved=current.userData.resolveCatPart?.(hit);
+      const part=resolved ?? current.userData.catPart;
       return {
-        type: 'cat', action: 'pet', part: current.userData.catPart,
-        label: `Stroke ${PART_LABELS[current.userData.catPart] ?? current.userData.catPart}`,
+        type: 'cat', action: 'pet', part,
+        label: `Stroke ${PART_LABELS[part] ?? part}`,
         object: current,
       };
     }
@@ -68,6 +82,7 @@ export class ContextInteraction {
 
   setHeld(item) {
     this.held = item;
+    if(item?.type==='toy'&&this.hover&&isWithinObject(this.hover.object,item.body?.mesh))this.hover=null;
     this.ui.setHeld(item?.label ?? null);
     this.refreshPrompt();
   }
@@ -83,8 +98,13 @@ export class ContextInteraction {
 
   updateRaycast() {
     this.raycaster.setFromCamera(this.pointer, this.camera);
-    const hit = this.raycaster.intersectObjects(this.sources, true).find(item => interactionData(item.object));
-    const data = hit ? interactionData(hit.object) : null;
+    const heldRoot=this.held?.type==='toy'?this.held.body?.mesh:null;
+    const hit = this.raycaster.intersectObjects(this.sources, true).find(item => {
+      if(heldRoot&&isWithinObject(item.object,heldRoot))return false;
+      const data=interactionData(item.object,item);
+      return data&&item.distance<=interactionReach(data);
+    });
+    const data = hit ? interactionData(hit.object,hit) : null;
     this.hover = data ? { ...data, hit } : null;
     this.refreshPrompt();
   }
@@ -129,6 +149,7 @@ export class ContextInteraction {
     this.pet = null;
     this.ui.setPetting(false);
     this.cameraRig?.setEnabled(true);
+    try{this.domElement.releasePointerCapture?.(event.pointerId);}catch{}
     this.refreshPrompt();
   }
 

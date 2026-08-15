@@ -5,4 +5,5 @@ release/
 .electron-cache/
 build/icon.ico
 build/icon.png
+build/*-smoke.json
 *.log

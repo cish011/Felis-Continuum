@@ -11,6 +11,7 @@ import {
   createNasalBridgeGeometry,
   createNeckGeometry,
   createNoseGeometry,
+  createOrbitalMaskGeometry,
   createPawGeometry,
   createPinnaGeometry,
   createSkullGeometry,
@@ -119,6 +120,7 @@ export class CatModel {
       blink:0, blinkPhase:-1, nextBlink:1.7,
       pupil:.38, breath:0, petLean:0, whiskerProtract:.1,
       tailSway:0, tailLift:.12,
+      spineBend:0, spineFlex:0,
     };
     this.catWorld = new THREE.Matrix4();
     this.catWorldInverse = new THREE.Matrix4();
@@ -294,10 +296,10 @@ export class CatModel {
 
     const nose=new THREE.Mesh(createNoseGeometry(),this.noseMaterial);
     this.geometries.add(nose.geometry);
-    nose.name='triangular-nasal-leather'; nose.position.set(0,-.017,.111); nose.castShadow=true;
+    nose.name='triangular-nasal-leather'; nose.position.set(0,-.019,.072); nose.castShadow=true;
     nose.userData.catPart='muzzle'; this.headRig.add(nose); this.pettable.push(nose); this.anatomy.nose=nose;
     const philtrum=new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-.023,.116),new THREE.Vector3(0,-.040,.097)]),
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-.025,.077),new THREE.Vector3(0,-.036,.064)]),
       new THREE.LineBasicMaterial({color:0x503f40,transparent:true,opacity:.55})
     );
     this.materials.add(philtrum.material); this.geometries.add(philtrum.geometry); this.headRig.add(philtrum);
@@ -310,7 +312,7 @@ export class CatModel {
   }
 
   createEye(side,sign) {
-    const rig=new THREE.Group(); rig.name=`${side}-eye-rig`; rig.position.set(sign*.027,.009,.063); this.headRig.add(rig);
+    const rig=new THREE.Group(); rig.name=`${side}-eye-rig`; rig.position.set(sign*.028,.009,.042); this.headRig.add(rig);
     // Almost no white sclera is exposed in a relaxed cat. The globe is buried
     // behind an almond aperture; only the iris/cornea project slightly.
     const scleraMat=new THREE.MeshPhysicalMaterial({color:0x252a22,roughness:.26,clearcoat:.55,clearcoatRoughness:.14});
@@ -318,25 +320,27 @@ export class CatModel {
     const pupilMat=new THREE.MeshBasicMaterial({color:0x040504});
     const corneaMat=new THREE.MeshPhysicalMaterial({color:0xdceff0,transparent:true,opacity:.17,roughness:.02,transmission:.4,thickness:.012,clearcoat:1});
     for(const material of [scleraMat,irisMat,pupilMat,corneaMat]) {this.materials.add(material);this.eyeMaterials.push(material);}
-    const globe=new THREE.Mesh(new THREE.SphereGeometry(.0102,28,20),scleraMat); globe.scale.set(1,.98,1.03); globe.castShadow=true; rig.add(globe);
-    const iris=new THREE.Mesh(new THREE.CircleGeometry(.00755,32),irisMat); iris.scale.set(1,.96,1); iris.position.z=.01015; rig.add(iris);
-    const pupil=new THREE.Mesh(new THREE.CircleGeometry(.0065,28),pupilMat); pupil.scale.set(.18,.96,1); pupil.position.z=.01045; rig.add(pupil);
+    const globeRig=new THREE.Group(); globeRig.name=`${side}-mobile-globe`; rig.add(globeRig);
+    const globe=new THREE.Mesh(new THREE.SphereGeometry(.0102,28,20),scleraMat); globe.scale.set(1,.98,1.03); globe.castShadow=true; globeRig.add(globe);
+    const iris=new THREE.Mesh(new THREE.CircleGeometry(.00755,32),irisMat); iris.scale.set(1,.96,1); iris.position.z=.01015; globeRig.add(iris);
+    const pupil=new THREE.Mesh(new THREE.CircleGeometry(.0065,28),pupilMat); pupil.scale.set(.18,.96,1); pupil.position.z=.01045; globeRig.add(pupil);
     const catchlight=new THREE.Mesh(new THREE.CircleGeometry(.00135,12),new THREE.MeshBasicMaterial({color:0xf8fff5,transparent:true,opacity:.78}));
-    this.materials.add(catchlight.material); catchlight.position.set(-sign*.0021,.0022,.0107); rig.add(catchlight);
-    const cornea=new THREE.Mesh(new THREE.SphereGeometry(.0103,28,14,0,TAU,0,Math.PI*.51),corneaMat); cornea.rotation.x=Math.PI/2; cornea.position.z=.0015; cornea.scale.set(1,.98,1.03); rig.add(cornea);
-    const upper=this.createFurredPart({name:`${side}-upper-eyelid`,parent:rig,geometry:createEyelidGeometry(.00825,.00575,true),position:[0,0,.0103],region:REGION.muzzle,petPart:'head',shells:0,seed:40+(sign>0?1:2)});
-    const lower=this.createFurredPart({name:`${side}-lower-eyelid`,parent:rig,geometry:createEyelidGeometry(.00825,.00575,false),position:[0,0,.01045],region:REGION.muzzle,petPart:'head',shells:0,seed:43+(sign>0?1:2)});
-    return {rig,globe,iris,pupil,cornea,upperLid:upper.group,lowerLid:lower.group,sign};
+    this.materials.add(catchlight.material); catchlight.position.set(-sign*.0021,.0022,.0107); globeRig.add(catchlight);
+    const cornea=new THREE.Mesh(new THREE.SphereGeometry(.0103,28,14,0,TAU,0,Math.PI*.51),corneaMat); cornea.rotation.x=Math.PI/2; cornea.position.z=.0015; cornea.scale.set(1,.98,1.03); cornea.visible=true; globeRig.add(cornea);
+    const socket=this.createFurredPart({name:`${side}-orbital-skin`,parent:rig,geometry:createOrbitalMaskGeometry(),position:[0,0,.01065],region:REGION.face,petPart:'head',shells:0,seed:39+(sign>0?1:2)});
+    const upper=this.createFurredPart({name:`${side}-upper-eyelid`,parent:rig,geometry:createEyelidGeometry(.00825,.00575,true),position:[0,0,.0109],region:REGION.muzzle,petPart:'head',shells:0,seed:40+(sign>0?1:2)});
+    const lower=this.createFurredPart({name:`${side}-lower-eyelid`,parent:rig,geometry:createEyelidGeometry(.00825,.00575,false),position:[0,0,.0109],region:REGION.muzzle,petPart:'head',shells:0,seed:43+(sign>0?1:2)});
+    return {rig,globeRig,globe,iris,pupil,cornea,socket,upperLid:upper.group,lowerLid:lower.group,sign};
   }
 
   createEar(side,sign) {
-    const rig=new THREE.Group(); rig.name=`${side}-pinna-rig`; rig.position.set(sign*.031,.029,.006); this.headRig.add(rig);
+    const rig=new THREE.Group(); rig.name=`${side}-pinna-rig`; rig.position.set(sign*.031,.029,.007); this.headRig.add(rig);
     rig.scale.x=sign;
     const outer=this.createFurredPart({name:`${side}-cartilaginous-pinna`,parent:rig,geometry:createPinnaGeometry(),position:[0,0,0],region:REGION.ear,petPart:'ear',shells:2,seed:50+(sign>0?1:2)});
     const innerGeometry=createInnerPinnaGeometry(); this.geometries.add(innerGeometry);
-    const inner=new THREE.Mesh(innerGeometry,this.innerEarMaterial); inner.position.set(0,0,.003); inner.scale.set(.88,.91,1); inner.userData.catPart='ear'; rig.add(inner); this.pettable.push(inner);
-    rig.rotation.z=-sign*.21;
-    rig.rotation.x=-.087;
+    const inner=new THREE.Mesh(innerGeometry,this.innerEarMaterial); inner.position.set(0,0,.0045); inner.scale.set(.88,.91,1); inner.userData.catPart='ear'; rig.add(inner); this.pettable.push(inner);
+    rig.rotation.z=-sign*.30;
+    rig.rotation.x=-.10;
     return {rig,outer,inner,sign};
   }
 
@@ -344,9 +348,9 @@ export class CatModel {
     const group=new THREE.Group(); group.name=sign<0?'left-vibrissae':'right-vibrissae'; this.headRig.add(group);
     const lines=[];
     for(let row=0;row<4;row++) for(let column=0;column<3;column++) {
-      const root=new THREE.Vector3(sign*(.037+column*.002),-.018-row*.006,.101-row*.0025);
+      const root=new THREE.Vector3(sign*(.032+column*.002),-.018-row*.006,.068-row*.002);
       const length=.061+row*.006+column*.004;
-      const end=new THREE.Vector3(sign*(.039+length),-.012-row*.007,.084-row*.007);
+      const end=new THREE.Vector3(sign*(.035+length),-.012-row*.007,.058-row*.007);
       const control=root.clone().lerp(end,.5).add(new THREE.Vector3(sign*.007,.007-column*.002,.008));
       const curve=new THREE.QuadraticBezierCurve3(root,control,end);
       const geometry=new THREE.BufferGeometry().setFromPoints(curve.getPoints(14));
@@ -365,10 +369,10 @@ export class CatModel {
 
   buildLimbs() {
     const specs={
-      frontLeft:{side:-1,front:true,anchor:[-.055,.000,.145],pole:[-.10,-.05,-1],upper:.0997,lower:.0915,distal:.0335},
-      frontRight:{side:1,front:true,anchor:[.055,.000,.145],pole:[.10,-.05,-1],upper:.0997,lower:.0915,distal:.0335},
-      hindLeft:{side:-1,front:false,anchor:[-.023,.008,-.138],pole:[-.08,.02,1],upper:.1009,lower:.1105,distal:.058},
-      hindRight:{side:1,front:false,anchor:[.023,.008,-.138],pole:[.08,.02,1],upper:.1009,lower:.1105,distal:.058},
+      frontLeft:{side:-1,front:true,anchor:[-.053,-.004,.143],pole:[-.10,-.05,-1],upper:.0919,lower:.0920,distal:.0329},
+      frontRight:{side:1,front:true,anchor:[.053,-.004,.143],pole:[.10,-.05,-1],upper:.0919,lower:.0920,distal:.0329},
+      hindLeft:{side:-1,front:false,anchor:[-.041,.006,-.145],pole:[-.08,.02,1],upper:.1031,lower:.1142,distal:.0544},
+      hindRight:{side:1,front:false,anchor:[.041,.006,-.145],pole:[.08,.02,1],upper:.1031,lower:.1142,distal:.0544},
     };
     let seed=70;
     for(const [key,spec] of Object.entries(specs)) {
@@ -398,7 +402,7 @@ export class CatModel {
 
   createPaw(key,spec,seed) {
     const group=new THREE.Group(); group.name=`${key}-paw-rig`; this.root.add(group);
-    group.scale.set(spec.front?1:.92,1,spec.front?1:1.06);
+    group.scale.set(1,1,1);
     const paw=this.createFurredPart({name:`${key}-pear-shaped-paw`,parent:group,geometry:createPawGeometry(),region:REGION.limb,petPart:'paw',shells:2,seed});
     const pads=new THREE.Group(); pads.name=`${key}-pads`; group.add(pads);
     const central=new THREE.Mesh(new THREE.SphereGeometry(1,14,8),this.padMaterial);
@@ -419,7 +423,7 @@ export class CatModel {
       const dewclaw=new THREE.Mesh(new THREE.ConeGeometry(.005,.021,7),this.clawMaterial);
       dewclaw.scale.setScalar(.42); dewclaw.rotation.z=-spec.side*.75; dewclaw.position.set(-spec.side*.016,.008,-.013); pads.add(dewclaw);
     }
-    return {group,paw,pads,claws:pads.children.filter(child=>child.material===this.clawMaterial)};
+    return {group,paw,pads,contactOffset:spec.front?.0085:.0080,claws:pads.children.filter(child=>child.material===this.clawMaterial)};
   }
 
   buildTail() {
@@ -508,6 +512,7 @@ export class CatModel {
     if(this.guardHairs) this.guardHairs.visible=!this.anatomyDiagnostic;
     if(this.collar) this.collar.visible=!this.anatomyDiagnostic&&this.profile.collar!==false;
     this.applyProfile(this.profile);
+    this.continuousSkin?.setLegacySkinHidden(true,this);
   }
 
   setDiagnosticMode(options=true) {
@@ -519,6 +524,10 @@ export class CatModel {
 
   update(motion={},cognition={},dt=1/60,time=0) {
     dt=clamp(Number(dt)||0,0,.1);
+    // The continuous neutral skin consumes the exact locomotion state after
+    // this presentation rig has updated.  Keeping the reference here avoids
+    // independently reconstructing spine flex and support-height offsets.
+    this.lastMotion=motion;
     const scale=Math.max(.001,this.root.scale.x||1);
     const position=v3(motion.position,this.root.position);
     this.root.position.copy(position);
@@ -537,9 +546,9 @@ export class CatModel {
     this.updateSpine(motion,dt,time);
     this.updateAttention(motion,cognition,dt,time);
     this.updateFace(motion,cognition,dt,time);
+    this.updateMicroMotion(motion,cognition,dt,time);
     this.updateLimbs(motion,dt,time);
     this.updateTail(motion,cognition,dt,time);
-    this.updateMicroMotion(motion,cognition,dt,time);
     this.updateDebug();
     this.root.updateMatrixWorld(true);
     this.catWorld.copy(this.root.matrixWorld);
@@ -549,12 +558,23 @@ export class CatModel {
   updateSpine(motion,dt,time) {
     const bend=Number(motion.spineBend)||0, flex=Number(motion.spineFlex)||0;
     const phase=Number(motion.gaitPhase)||0, speed=Number(motion.speed)||0;
+    this.state.spineBend=damp(this.state.spineBend,bend,12,dt);
+    this.state.spineFlex=damp(this.state.spineFlex,flex,12,dt);
+    const meanHeight=Number(motion.bodyHeight);
+    const shoulderHeight=Number(motion.shoulderHeight);
+    const shoulderOffset=Number.isFinite(meanHeight)&&Number.isFinite(shoulderHeight)
+      ? clamp((shoulderHeight-meanHeight)/(this.root.scale.x||1),-.025,.025)
+      : 0;
     // A rigid torso rotation cannot bend the skin: it only slides the neck,
     // limbs and tail through their attachments. Keep this manifold aligned
     // until longitudinal skin weights drive a real spine deformation.
     this.anatomy.torso.group.rotation.y=damp(this.anatomy.torso.group.rotation.y,0,12,dt);
     this.anatomy.torso.group.rotation.x=damp(this.anatomy.torso.group.rotation.x,0,12,dt);
     this.anatomy.neck.group.rotation.y=damp(this.anatomy.neck.group.rotation.y,bend*.20,11,dt);
+    this.anatomy.neck.group.position.y=damp(this.anatomy.neck.group.position.y,.030+shoulderOffset*.55,11,dt);
+    this.anatomy.neck.group.position.z=damp(this.anatomy.neck.group.position.z,.170-Math.abs(flex)*.004,11,dt);
+    this.headRig.position.y=damp(this.headRig.position.y,.078+shoulderOffset*.72+Math.abs(flex)*.002,11,dt);
+    this.headRig.position.z=damp(this.headRig.position.z,.170-Math.abs(flex)*.005,11,dt);
     this.anatomy.spine.forEach((segment,index)=>{
       const t=index/(this.anatomy.spine.length-1)-.5;
       segment.group.rotation.y=damp(segment.group.rotation.y,bend*t*1.55,12,dt);
@@ -565,9 +585,9 @@ export class CatModel {
     });
     for(const [record,offset] of [[this.anatomy.scapulaLeft,0],[this.anatomy.scapulaRight,.5]]) {
       const cycle=Math.sin((phase+offset)*TAU);
-      const stride=cycle*clamp(speed/1.4)*.009;
+      const stride=cycle*clamp(speed/1.4)*.022;
       record.group.position.z=record.bindPosition.z+stride;
-      record.group.position.y=record.bindPosition.y+Math.max(0,-cycle)*.006;
+      record.group.position.y=record.bindPosition.y+Math.max(0,-cycle)*.008;
       record.group.rotation.x=-.17-stride*2.1;
     }
   }
@@ -592,8 +612,8 @@ export class CatModel {
     this.state.eyePitch=dampAngle(this.state.eyePitch,clamp(pitch,-.34,.28),16,dt);
     this.state.headYaw=dampAngle(this.state.headYaw,clamp(yaw,-.78,.78)*(attention?.x!==undefined ? .72 : .45),5.3+distraction*2,dt);
     this.state.headPitch=dampAngle(this.state.headPitch,clamp(pitch,-.42,.38),5.8,dt);
-    this.headRig.rotation.y=this.state.headYaw;
-    this.headRig.rotation.x=this.state.headPitch;
+    this.headRig.rotation.y=this.state.headYaw+this.state.spineBend*.12;
+    this.headRig.rotation.x=this.state.headPitch+this.state.spineFlex*.15;
     const earTarget=clamp(yaw,-.95,.95);
     this.state.leftEarYaw=dampAngle(this.state.leftEarYaw,earTarget+Math.sin(time*.41)*.08,11,dt);
     this.state.rightEarYaw=dampAngle(this.state.rightEarYaw,earTarget-Math.sin(time*.37)*.07,10,dt);
@@ -614,8 +634,8 @@ export class CatModel {
     const pupilTarget=clamp(.16+(1-daylight)*.6+arousal*.54,.12,.92);
     this.state.pupil=damp(this.state.pupil,pupilTarget,4.2,dt);
     for(const eye of Object.values(this.eyes)) {
-      eye.rig.rotation.y=this.state.eyeYaw*.43;
-      eye.rig.rotation.x=this.state.eyePitch*.38;
+      eye.globeRig.rotation.y=eye.sign*.045+this.state.eyeYaw*.32;
+      eye.globeRig.rotation.x=this.state.eyePitch*.28;
       eye.pupil.scale.x=lerp(.10,.86,Math.pow(this.state.pupil,1.45));
       eye.pupil.scale.y=lerp(1.05,.92,this.state.pupil);
       eye.upperLid.position.y=-this.state.blink*.0053;
@@ -625,12 +645,12 @@ export class CatModel {
     }
     this.state.earFlatten=damp(this.state.earFlatten,clamp(fear*.82+stress*.28),7.5,dt);
     const flick=(Math.sin(time*5.7+Math.floor(time*.19)*9.1)>.985)?1:0;
-    this.ears.left.rig.rotation.y=this.state.leftEarYaw*.58+flick*.28;
-    this.ears.right.rig.rotation.y=this.state.rightEarYaw*.58-flick*.19;
-    this.ears.left.rig.rotation.z=-this.ears.left.sign*(.21+this.state.earFlatten*.72);
-    this.ears.right.rig.rotation.z=-this.ears.right.sign*(.21+this.state.earFlatten*.72);
-    this.ears.left.rig.rotation.x=-.087+this.state.earFlatten*.42;
-    this.ears.right.rig.rotation.x=-.087+this.state.earFlatten*.42;
+    this.ears.left.rig.rotation.y=-.09+this.state.leftEarYaw*.58+flick*.28;
+    this.ears.right.rig.rotation.y=.07+this.state.rightEarYaw*.58-flick*.19;
+    this.ears.left.rig.rotation.z=-this.ears.left.sign*(.30+this.state.earFlatten*.67);
+    this.ears.right.rig.rotation.z=-this.ears.right.sign*(.30+this.state.earFlatten*.67);
+    this.ears.left.rig.rotation.x=-.10+this.state.earFlatten*.42;
+    this.ears.right.rig.rotation.x=-.10+this.state.earFlatten*.42;
     this.state.whiskerProtract=damp(this.state.whiskerProtract,clamp(.12+arousal*.42+(cognition?.perception?.attention?.salience??0)*.3),7,dt);
     this.updateWhiskers();
   }
@@ -671,27 +691,33 @@ export class CatModel {
       const normalWorld=v3(supplied?.normal,UP).normalize();
       const normalLocal=normalWorld.transformDirection(inverse).normalize();
       const anchorLocal=limb.anchor.clone();
+      const sectionHeight=Number(limb.front?motion.shoulderHeight:motion.pelvisHeight);
+      const meanHeight=Number(motion.bodyHeight);
+      if(Number.isFinite(sectionHeight)&&Number.isFinite(meanHeight)) {
+        anchorLocal.y+=clamp((sectionHeight-meanHeight)/(this.root.scale.x||1),-.04,.04);
+      }
       if(limb.front&&limb.scapula) {
         anchorLocal.z+=(limb.scapula.group.position.z-limb.scapula.bindPosition.z)*.72;
         anchorLocal.y+=(limb.scapula.group.position.y-limb.scapula.bindPosition.y)*.45;
       }
       const shoulder=anchorLocal.applyMatrix4(this.body.matrix);
-      const cycle=Math.sin(((motion.gaitPhase??0)+(key==='frontRight' ? .25 : key==='hindLeft' ? .5 : key==='hindRight' ? .75 : 0))*TAU);
+      const cycle=Math.sin((Number(supplied?.phase) || 0)*TAU);
       if(limb.front) {shoulder.z+=cycle*clamp((motion.speed??0)/2)*.004;shoulder.y+=Math.max(0,-cycle)*.003;}
       else shoulder.y+=Math.max(0,cycle)*.003;
       let distalTarget,pawBase;
       if(limb.front) {
         // Carpus and MCP are separate landmarks; the former implementation
         // skipped MCP and stretched one segment all the way to the ground.
-        distalTarget=foot.clone().add(new THREE.Vector3(0,.029,-.043));
-        pawBase=foot.clone().add(new THREE.Vector3(0,.003,-.022));
+        distalTarget=foot.clone().add(new THREE.Vector3(limb.side*.002,.031,-.042));
+        pawBase=foot.clone().add(new THREE.Vector3(0,.005,-.022));
       } else {
         // Preserve the feline hock -> MTP -> toe reversal that creates the
         // characteristic digitigrade hind silhouette.
-        distalTarget=foot.clone().add(new THREE.Vector3(0,.045,-.067));
-        pawBase=foot.clone().add(new THREE.Vector3(0,.004,-.026));
+        distalTarget=foot.clone().add(new THREE.Vector3(limb.side*.005,.037,-.073));
+        pawBase=foot.clone().add(new THREE.Vector3(0,.004,-.030));
       }
-      const joint=solveTwoBone(shoulder,distalTarget,limb.upper.baseLength,limb.lower.baseLength,limb.pole,this.tmp.a,this.tmp.b);
+      const pole=limb.pole.clone().transformDirection(this.body.matrix);
+      const joint=solveTwoBone(shoulder,distalTarget,limb.upper.baseLength,limb.lower.baseLength,pole,this.tmp.a,this.tmp.b);
       this.setSegment(limb.upper,shoulder,joint);
       this.setSegment(limb.lower,joint,distalTarget);
       this.setSegment(limb.metapodial,distalTarget,pawBase);
@@ -712,7 +738,7 @@ export class CatModel {
   }
 
   setPaw(paw,position,normal,forwardHint=FORWARD) {
-    paw.group.position.copy(position).addScaledVector(normal,.0105);
+    paw.group.position.copy(position).addScaledVector(normal,paw.contactOffset??.0075);
     // Both the paw and its target now live in root-local space. Reusing the
     // world heading here used to apply the yaw a second time after root yaw,
     // twisting paws away from their legs whenever the cat turned.
@@ -738,9 +764,9 @@ export class CatModel {
           : .26+affection*.12;
     this.state.tailLift=damp(this.state.tailLift,liftTarget,3.8,dt);
     this.state.tailSway=damp(this.state.tailSway,balance,8,dt);
-    let start=new THREE.Vector3(0,.025,-.205).applyMatrix4(this.body.matrix);
+    let start=new THREE.Vector3(0,.034,-.198).applyMatrix4(this.body.matrix);
     let yaw=this.state.tailSway*.48;
-    let pitch=lerp(-.22,.62,this.state.tailLift);
+    let pitch=lerp(-.05,.58,this.state.tailLift);
     for(let i=0;i<this.tail.length;i++) {
       const segment=this.tail[i],t=i/(this.tail.length-1);
       yaw+=this.state.tailSway*(1-t)*.04+Math.sin(time*(1.1+speed*.4)+i*.42)*(.018+t*.013);
@@ -764,7 +790,7 @@ export class CatModel {
     this.state.petLean=damp(this.state.petLean,pet?.active?clamp(pet.preference??.5):0,5,dt);
     if(pet?.active&&pet.point) {
       const point=v3(pet.point); this.root.worldToLocal(point);
-      const lateral=clamp(point.x*2,-.08,.08)*this.state.petLean;
+      const lateral=clamp(point.x*.45,-.014,.014)*this.state.petLean;
       this.body.position.x=damp(this.body.position.x,lateral,6,dt);
       if((pet.part==='cheek'||pet.part==='head')&&pet.preference>.55) this.headRig.position.x=damp(this.headRig.position.x,lateral*.7,7,dt);
     } else {

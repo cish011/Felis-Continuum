@@ -261,14 +261,22 @@ async function configureDiagnosticScene(window) {
       }
     }
 
-    // The base coat shader remains, preserving markings and readable surface
-    // curvature. Every displaced shell plus silhouette guard hairs is removed,
-    // making these explicitly smooth/shorthair anatomy checks.
+    // Use one neutral material for every visible surface. Recognition in this
+    // gate must come from silhouette and deformation, not coat/detail cues.
     let hiddenFurObjects = 0;
+    let flatGrayObjects = 0;
     cat.root.traverse(object => {
       if (/\\-fur\\-\\d+$/.test(object.name || '')) {
         object.visible = false;
         hiddenFurObjects++;
+      }
+      if (object.isLine || object.isPoints) {
+        object.visible = false;
+        return;
+      }
+      if (object.isMesh && cat.diagnosticMaterial) {
+        object.material = cat.diagnosticMaterial;
+        flatGrayObjects++;
       }
     });
     if (cat.sharedUniforms?.uFurLength) cat.sharedUniforms.uFurLength.value = 0;
@@ -413,8 +421,17 @@ async function configureDiagnosticScene(window) {
         if (!object.visible || !(object.isMesh || object.isLine || object.isPoints)) return;
         const geometry = object.geometry;
         if (!geometry?.attributes?.position) return;
-        geometry.computeBoundingBox();
-        const box = geometry.boundingBox;
+        // Geometry bounds are bind-pose coordinates for a SkinnedMesh and can
+        // be far below the posed cat. Ask Three.js for the CPU-deformed bound
+        // so every validation view frames the actual current silhouette.
+        let box;
+        if (object.isSkinnedMesh && typeof object.computeBoundingBox === 'function') {
+          object.computeBoundingBox();
+          box = object.boundingBox;
+        } else {
+          geometry.computeBoundingBox();
+          box = geometry.boundingBox;
+        }
         if (!box) return;
         let contributed = false;
         for (const x of [box.min.x, box.max.x]) {
@@ -504,6 +521,7 @@ async function configureDiagnosticScene(window) {
         ? presentationCompatibility
         : ['native'],
       hiddenFurObjects,
+      flatGrayObjects,
       hasFloor: Boolean(floor),
       catParts: cat.partRecords?.length ?? null,
       shellMaterials: cat.shellMaterials?.length ?? null,
@@ -639,11 +657,13 @@ async function run() {
       throw new Error(`Capture appears blank or flat: ${shot.file} ${JSON.stringify(statistics)}`);
     }
     const bytes = image.toPNG();
+    const outputPath = path.join(OUTPUT_DIRECTORY, shot.file);
+    // Preserve a failing render for diagnosis; validation still fails and the
+    // manifest is never marked passed, but the actual GPU frame is inspectable.
+    await fs.writeFile(outputPath, bytes);
     if (bytes.length < 30_000) {
       throw new Error(`Capture is unexpectedly small: ${shot.file} (${bytes.length} bytes).`);
     }
-    const outputPath = path.join(OUTPUT_DIRECTORY, shot.file);
-    await fs.writeFile(outputPath, bytes);
     manifest.captures.push({
       file: shot.file,
       label: shot.label,

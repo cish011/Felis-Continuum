@@ -671,7 +671,9 @@ export class ProceduralLocomotion {
           foot.lockedPosition.copy(sampled.position);
           foot.lockedNormal.copy(sampled.normal);
         }
-        if (forcePlant && foot.lockedPosition.distanceToSquared(foot.position) > .2) {
+        // distanceToSquared is in m^2. The previous .2 threshold allowed an
+        // adult cat's planted foot to remain almost 45 cm from neutral.
+        if (forcePlant && foot.lockedPosition.distanceToSquared(foot.position) > .0064 * this.bodyScale * this.bodyScale) {
           const nominal = this._nominalFootPosition(foot.layout, this.position, this.heading);
           const sampled = this.navigation.sampleSurface(nominal);
           foot.lockedPosition.copy(sampled.position);
@@ -969,7 +971,9 @@ export class ProceduralLocomotion {
     this.shoulderHeight = this.bodyHeight + clamp(frontHeight - supportHeight, -.1, .1);
     this.pelvisHeight = this.bodyHeight + clamp(hindHeight - supportHeight, -.1, .1);
 
-    const terrainPitch = Math.atan2(frontHeight - hindHeight, .283 * this.bodyScale);
+    // With +Z forward, positive X rotation lowers the nose. Higher forefeet
+    // therefore require a negative pitch to align the trunk uphill.
+    const terrainPitch = -Math.atan2(frontHeight - hindHeight, .283 * this.bodyScale);
     this.bodyPitch = damp(this.bodyPitch, clamp(terrainPitch, -.38, .38), 7.5, dt);
     const gallopAmount = smoothstep(1.55, 3.6, this.speed);
     const gaitFlex = Math.sin(this.gaitPhase * TAU) * gallopAmount * .085;
@@ -1001,6 +1005,7 @@ export class ProceduralLocomotion {
         normal: foot.normal.clone(),
         plantWeight: foot.plantWeight,
         swing: foot.swing,
+        phase: foot.phase,
       };
     }
     return {
