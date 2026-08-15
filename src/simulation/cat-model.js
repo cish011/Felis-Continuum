@@ -166,15 +166,15 @@ export class CatModel {
     }
     this.diagnosticMaterial = new THREE.MeshStandardMaterial({
       name:'neutral-anatomy-validation-surface',
-      color:0x777b78,
-      roughness:.86,
+      color:0x9da29e,
+      roughness:.78,
       metalness:0,
     });
     this.padMaterial = new THREE.MeshStandardMaterial({color:0x5b4648,roughness:.82,metalness:0});
     this.noseMaterial = new THREE.MeshPhysicalMaterial({color:0x6d4f51,roughness:.48,clearcoat:.16,clearcoatRoughness:.6});
     this.innerEarMaterial = new THREE.MeshStandardMaterial({color:0xa87978,roughness:.91,side:THREE.DoubleSide});
     this.clawMaterial = new THREE.MeshPhysicalMaterial({color:0xe8dfcf,roughness:.3,transmission:.08,thickness:.01});
-    this.whiskerMaterial = new THREE.LineBasicMaterial({color:0xe9e2d5,transparent:true,opacity:.72});
+    this.whiskerMaterial = new THREE.LineBasicMaterial({color:0xe9e2d5,transparent:true,opacity:.38});
     this.collarMaterial = new THREE.MeshPhysicalMaterial({color:0x4d796e,roughness:.42,metalness:.08,clearcoat:.18});
     this.metalMaterial = new THREE.MeshStandardMaterial({color:0xb9aa72,roughness:.3,metalness:.78});
     for (const material of [this.diagnosticMaterial,this.padMaterial,this.noseMaterial,this.innerEarMaterial,this.clawMaterial,this.whiskerMaterial,this.collarMaterial,this.metalMaterial]) this.materials.add(material);
@@ -276,14 +276,21 @@ export class CatModel {
       name:'tapered-mesocephalic-cranium',parent:this.headRig,geometry:createSkullGeometry(),
       region:REGION.face,petPart:'head',shells:5,seed:30,
     });
-    this.anatomy.zygomaticLeft=this.createFurredPart({name:'left-zygomatic-cheek',parent:this.headRig,position:[-.032,-.005,.044],scale:[.012,.016,.018],region:REGION.face,petPart:'cheek',shells:1,seed:31});
-    this.anatomy.zygomaticRight=this.createFurredPart({name:'right-zygomatic-cheek',parent:this.headRig,position:[.032,-.005,.044],scale:[.012,.016,.018],region:REGION.face,petPart:'cheek',shells:1,seed:32});
+    this.anatomy.zygomaticLeft=this.createFurredPart({name:'left-zygomatic-cheek',parent:this.headRig,position:[-.034,-.005,.044],scale:[.008,.011,.013],region:REGION.face,petPart:'cheek',shells:1,seed:31});
+    this.anatomy.zygomaticRight=this.createFurredPart({name:'right-zygomatic-cheek',parent:this.headRig,position:[.034,-.005,.044],scale:[.008,.011,.013],region:REGION.face,petPart:'cheek',shells:1,seed:32});
     this.anatomy.nasalBridge=this.createFurredPart({name:'nasal-bridge',parent:this.headRig,geometry:createNasalBridgeGeometry(),position:[0,.004,.046],region:REGION.muzzle,petPart:'muzzle',shells:2,seed:33});
-    this.anatomy.cheekLeft=this.createFurredPart({name:'left-whisker-pad',parent:this.headRig,position:[-.016,-.021,.085],scale:[.018,.012,.018],region:REGION.muzzle,petPart:'cheek',shells:1,seed:34});
-    this.anatomy.cheekRight=this.createFurredPart({name:'right-whisker-pad',parent:this.headRig,position:[.016,-.021,.085],scale:[.018,.012,.018],region:REGION.muzzle,petPart:'cheek',shells:1,seed:35});
-    this.anatomy.jaw=this.createFurredPart({name:'mandible-and-chin',parent:this.headRig,geometry:createJawGeometry(),position:[0,-.031,.0495],scale:[1,1,.67],region:REGION.muzzle,petPart:'muzzle',shells:2,seed:36});
-    this.anatomy.browLeft=this.createFurredPart({name:'left-brow-orbital-ridge',parent:this.headRig,position:[-.027,.025,.048],scale:[.014,.004,.012],region:REGION.face,petPart:'head',shells:1,seed:37});
-    this.anatomy.browRight=this.createFurredPart({name:'right-brow-orbital-ridge',parent:this.headRig,position:[.027,.025,.048],scale:[.014,.004,.012],region:REGION.face,petPart:'head',shells:1,seed:38});
+    this.anatomy.cheekLeft=this.createFurredPart({name:'left-whisker-pad',parent:this.headRig,position:[-.013,-.020,.087],scale:[.012,.007,.013],region:REGION.muzzle,petPart:'cheek',shells:1,seed:34});
+    this.anatomy.cheekRight=this.createFurredPart({name:'right-whisker-pad',parent:this.headRig,position:[.013,-.020,.087],scale:[.012,.007,.013],region:REGION.muzzle,petPart:'cheek',shells:1,seed:35});
+    this.anatomy.jaw=this.createFurredPart({name:'mandible-and-chin',parent:this.headRig,geometry:createJawGeometry(),position:[0,-.029,.051],scale:[.80,.82,.72],region:REGION.muzzle,petPart:'muzzle',shells:2,seed:36});
+    this.anatomy.browLeft=this.createFurredPart({name:'left-brow-orbital-ridge',parent:this.headRig,position:[-.027,.024,.048],scale:[.011,.002,.008],region:REGION.face,petPart:'head',shells:1,seed:37});
+    this.anatomy.browRight=this.createFurredPart({name:'right-brow-orbital-ridge',parent:this.headRig,position:[.027,.024,.048],scale:[.011,.002,.008],region:REGION.face,petPart:'head',shells:1,seed:38});
+    // The continuous head envelope carries these planes. Exposing helper
+    // ellipsoids turns a measured skull back into a stack of balls.
+    this.anatomy.zygomaticLeft.group.visible=false;
+    this.anatomy.zygomaticRight.group.visible=false;
+    this.anatomy.nasalBridge.group.visible=false;
+    this.anatomy.browLeft.group.visible=false;
+    this.anatomy.browRight.group.visible=false;
 
     const nose=new THREE.Mesh(createNoseGeometry(),this.noseMaterial);
     this.geometries.add(nose.geometry);
@@ -358,10 +365,10 @@ export class CatModel {
 
   buildLimbs() {
     const specs={
-      frontLeft:{side:-1,front:true,anchor:[-.055,.000,.145],pole:[-.10,-.05,-1],upper:.0997,lower:.0915,distal:.052},
-      frontRight:{side:1,front:true,anchor:[.055,.000,.145],pole:[.10,-.05,-1],upper:.0997,lower:.0915,distal:.052},
-      hindLeft:{side:-1,front:false,anchor:[-.023,.008,-.138],pole:[-.08,.02,1],upper:.1009,lower:.1105,distal:.080},
-      hindRight:{side:1,front:false,anchor:[.023,.008,-.138],pole:[.08,.02,1],upper:.1009,lower:.1105,distal:.080},
+      frontLeft:{side:-1,front:true,anchor:[-.055,.000,.145],pole:[-.10,-.05,-1],upper:.0997,lower:.0915,distal:.0335},
+      frontRight:{side:1,front:true,anchor:[.055,.000,.145],pole:[.10,-.05,-1],upper:.0997,lower:.0915,distal:.0335},
+      hindLeft:{side:-1,front:false,anchor:[-.023,.008,-.138],pole:[-.08,.02,1],upper:.1009,lower:.1105,distal:.058},
+      hindRight:{side:1,front:false,anchor:[.023,.008,-.138],pole:[.08,.02,1],upper:.1009,lower:.1105,distal:.058},
     };
     let seed=70;
     for(const [key,spec] of Object.entries(specs)) {
@@ -372,6 +379,8 @@ export class CatModel {
       const scapula=spec.front?(spec.side<0?this.anatomy.scapulaLeft:this.anatomy.scapulaRight):null;
       const jointMass=this.createFurredPart({name:`${key}-${spec.front?'elbow':'stifle'}-joint`,parent:this.root,scale:spec.front?[.010,.009,.011]:[.014,.012,.015],region:REGION.limb,petPart:spec.front?'frontLeg':'hindLeg',shells:1,seed:seed++});
       const distalMass=this.createFurredPart({name:`${key}-${spec.front?'carpus':'hock'}-joint`,parent:this.root,scale:spec.front?[.0065,.006,.0075]:[.0085,.0075,.009],region:REGION.limb,petPart:spec.front?'frontLeg':'hindLeg',shells:1,seed:seed++});
+      jointMass.group.visible=false;
+      distalMass.group.visible=false;
       this.limbs[key]={...spec,key,anchor:new THREE.Vector3(...spec.anchor),pole:new THREE.Vector3(...spec.pole),upper,lower,metapodial,paw,scapula,
         jointMass,distalMass,shoulder:new THREE.Vector3(),joint:new THREE.Vector3(),wrist:new THREE.Vector3(),foot:new THREE.Vector3(),normal:new THREE.Vector3(0,1,0)};
     }
@@ -379,7 +388,9 @@ export class CatModel {
 
   createSegment(name,radius,length,petPart,seed,shape={}) {
     const radii=Array.isArray(radius)?radius:[radius,radius*.82];
-    const geometry=createTaperedLimbGeometry(length,radii[0],radii[1],shape);
+    // Overlap adjacent muscle envelopes while retaining the measured
+    // kinematic length. This removes the need for axis-aligned joint balls.
+    const geometry=createTaperedLimbGeometry(length*1.12,radii[0],radii[1],shape);
     const part=this.createFurredPart({name,parent:this.root,geometry,region:REGION.limb,petPart,shells:3,seed});
     part.baseLength=length;
     return part;
@@ -393,14 +404,14 @@ export class CatModel {
     const central=new THREE.Mesh(new THREE.SphereGeometry(1,14,8),this.padMaterial);
     central.scale.set(spec.front ? .0101 : .0075,.0038,spec.front ? .0070 : .0065); central.position.set(0,-.0102,-.002); central.userData.catPart='paw'; pads.add(central); this.pettable.push(central);
     for(let digit=0;digit<4;digit++) {
-      const toe=this.createFurredPart({name:`${key}-digit-${digit}`,parent:group,position:[(digit-1.5)*.0065,-.001,.021+Math.abs(digit-1.5)*.0007],scale:[.0055,.0063,.010],region:REGION.limb,petPart:'paw',shells:1,seed:seed+digit+1});
+      const toe=this.createFurredPart({name:`${key}-digit-${digit}`,parent:group,position:[(digit-1.5)*.0055,-.001,.021+Math.abs(digit-1.5)*.0005],scale:[.0044,.0042,.0075],region:REGION.limb,petPart:'paw',shells:1,seed:seed+digit+1});
       toe.group.rotation.y=(digit-1.5)*-.035;
       const digital=new THREE.Mesh(new THREE.SphereGeometry(1,12,7),this.padMaterial);
       digital.scale.set(spec.front ? .00275 : .00315,.0022,spec.front ? .0050 : .0060);
-      digital.position.set((digit-1.5)*.0065,-.0104,.021+Math.abs(digit-1.5)*.0007);
+      digital.position.set((digit-1.5)*.0055,-.0104,.021+Math.abs(digit-1.5)*.0005);
       digital.userData.catPart='paw'; pads.add(digital); this.pettable.push(digital);
       const claw=new THREE.Mesh(new THREE.ConeGeometry(.006,.025,7),this.clawMaterial);
-      claw.name=`${key}-claw-${digit}`; claw.scale.setScalar(.42); claw.rotation.x=Math.PI/2; claw.position.set((digit-1.5)*.0065,-.001,.031); claw.visible=false; pads.add(claw);
+      claw.name=`${key}-claw-${digit}`; claw.scale.setScalar(.42); claw.rotation.x=Math.PI/2; claw.position.set((digit-1.5)*.0055,-.001,.029); claw.visible=false; pads.add(claw);
     }
     if(spec.front) {
       const carpal=new THREE.Mesh(new THREE.SphereGeometry(1,11,7),this.padMaterial);
@@ -538,8 +549,11 @@ export class CatModel {
   updateSpine(motion,dt,time) {
     const bend=Number(motion.spineBend)||0, flex=Number(motion.spineFlex)||0;
     const phase=Number(motion.gaitPhase)||0, speed=Number(motion.speed)||0;
-    this.anatomy.torso.group.rotation.y=damp(this.anatomy.torso.group.rotation.y,bend*.16,12,dt);
-    this.anatomy.torso.group.rotation.x=damp(this.anatomy.torso.group.rotation.x,flex*.10,12,dt);
+    // A rigid torso rotation cannot bend the skin: it only slides the neck,
+    // limbs and tail through their attachments. Keep this manifold aligned
+    // until longitudinal skin weights drive a real spine deformation.
+    this.anatomy.torso.group.rotation.y=damp(this.anatomy.torso.group.rotation.y,0,12,dt);
+    this.anatomy.torso.group.rotation.x=damp(this.anatomy.torso.group.rotation.x,0,12,dt);
     this.anatomy.neck.group.rotation.y=damp(this.anatomy.neck.group.rotation.y,bend*.20,11,dt);
     this.anatomy.spine.forEach((segment,index)=>{
       const t=index/(this.anatomy.spine.length-1)-.5;
@@ -665,13 +679,22 @@ export class CatModel {
       const cycle=Math.sin(((motion.gaitPhase??0)+(key==='frontRight' ? .25 : key==='hindLeft' ? .5 : key==='hindRight' ? .75 : 0))*TAU);
       if(limb.front) {shoulder.z+=cycle*clamp((motion.speed??0)/2)*.004;shoulder.y+=Math.max(0,-cycle)*.003;}
       else shoulder.y+=Math.max(0,cycle)*.003;
-      let distalTarget;
-      if(limb.front) distalTarget=foot.clone().add(new THREE.Vector3(0,.038,-.037));
-      else distalTarget=foot.clone().add(new THREE.Vector3(0,.045,-.067));
+      let distalTarget,pawBase;
+      if(limb.front) {
+        // Carpus and MCP are separate landmarks; the former implementation
+        // skipped MCP and stretched one segment all the way to the ground.
+        distalTarget=foot.clone().add(new THREE.Vector3(0,.029,-.043));
+        pawBase=foot.clone().add(new THREE.Vector3(0,.003,-.022));
+      } else {
+        // Preserve the feline hock -> MTP -> toe reversal that creates the
+        // characteristic digitigrade hind silhouette.
+        distalTarget=foot.clone().add(new THREE.Vector3(0,.045,-.067));
+        pawBase=foot.clone().add(new THREE.Vector3(0,.004,-.026));
+      }
       const joint=solveTwoBone(shoulder,distalTarget,limb.upper.baseLength,limb.lower.baseLength,limb.pole,this.tmp.a,this.tmp.b);
       this.setSegment(limb.upper,shoulder,joint);
       this.setSegment(limb.lower,joint,distalTarget);
-      this.setSegment(limb.metapodial,distalTarget,foot);
+      this.setSegment(limb.metapodial,distalTarget,pawBase);
       limb.jointMass.group.position.copy(joint);
       limb.distalMass.group.position.copy(distalTarget);
       this.setPaw(limb.paw,foot,normalLocal,pawForwardLocal);

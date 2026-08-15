@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-14T23:25:34.707Z",
+  "generatedAt": "2026-08-15T13:33:20.825Z",
   "source": "http://127.0.0.1:4173",
   "requestedViewport": {
     "width": 1600,
@@ -62,14 +62,14 @@
       "file": "02-front-standing.png",
       "label": "front orthographic-like / standing",
       "pose": "standing",
-      "bytes": 120132,
+      "bytes": 100857,
       "statistics": {
         "width": 1350,
         "height": 681,
         "samples": 20430,
-        "luminanceMean": 135.75,
-        "luminanceDeviation": 46.85,
-        "luminanceRange": 212.14
+        "luminanceMean": 149.41,
+        "luminanceDeviation": 37.49,
+        "luminanceRange": 206.36
       },
       "framing": {
         "center": [
@@ -101,14 +101,14 @@
       "file": "03-top-three-quarter-standing.png",
       "label": "top three-quarter / standing",
       "pose": "standing",
-      "bytes": 100857,
+      "bytes": 72713,
       "statistics": {
         "width": 1350,
         "height": 681,
         "samples": 20430,
-        "luminanceMean": 149.41,
-        "luminanceDeviation": 37.49,
-        "luminanceRange": 206.36
+        "luminanceMean": 115.97,
+        "luminanceDeviation": 11.08,
+        "luminanceRange": 190.77
       },
       "framing": {
         "center": [

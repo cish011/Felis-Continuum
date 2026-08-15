@@ -12,7 +12,32 @@ function signedPow(value, exponent) {
  * one continuous silhouette and one continuous normal field through pelvis,
  * waist, ribcage and thoracic inlet.
  */
-export function createAnatomicalLoft(rings, radialSegments=32) {
+function interpolateRings(rings, subdivisions) {
+  if (subdivisions <= 1 || rings.length < 2) return rings;
+  const result=[];
+  for(let ringIndex=0;ringIndex<rings.length-1;ringIndex++) {
+    const current=rings[ringIndex],next=rings[ringIndex+1];
+    for(let step=0;step<subdivisions;step++) {
+      const t=step/subdivisions;
+      // Preserve every measured station while easing the intervening soft
+      // tissue. Straight spans between only ten stations made the back and
+      // abdomen visibly faceted in orthographic validation.
+      const eased=t*t*(3-2*t);
+      result.push({
+        z:THREE.MathUtils.lerp(current.z,next.z,t),
+        rx:THREE.MathUtils.lerp(current.rx,next.rx,eased),
+        ry:THREE.MathUtils.lerp(current.ry,next.ry,eased),
+        y:THREE.MathUtils.lerp(current.y ?? 0,next.y ?? 0,eased),
+        power:THREE.MathUtils.lerp(current.power ?? 2,next.power ?? 2,eased),
+      });
+    }
+  }
+  result.push({...rings.at(-1)});
+  return result;
+}
+
+export function createAnatomicalLoft(rings,radialSegments=32,longitudinalSubdivisions=4) {
+  rings=interpolateRings(rings,longitudinalSubdivisions);
   const positions=[];
   const uvs=[];
   const indices=[];
@@ -234,5 +259,7 @@ export function createEyelidGeometry(width,height,upper=true) {
     points.push(new THREE.Vector3(x,arch,Math.cos((t-.5)*Math.PI)*.002));
   }
   const curve=new THREE.CatmullRomCurve3(points,false,'centripetal');
-  return new THREE.TubeGeometry(curve,28,.0036,6,false);
+  // The lid margin is a fine fold around a buried globe. A thick tube reads
+  // as a cartoon spectacle frame and falsely enlarges the eye aperture.
+  return new THREE.TubeGeometry(curve,28,.00115,6,false);
 }
